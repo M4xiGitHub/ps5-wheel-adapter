@@ -27,6 +27,7 @@ Pico Micro-USB ──► PS5 (or a computer for testing)
 | Console-facing USB identity vs a hardware-tested reference | byte-identical where it matters, see [docs/CONSOLE_BEHAVIOR.md](docs/CONSOLE_BEHAVIOR.md) |
 | Hori signs, rig layouts, auth through the adapter on a PC (T1–T5) | not run yet |
 | PS5 acceptance, PS/user selection, GT7 controls, 15 min, repeated starts (T7–T9) | not run yet |
+| Force feedback to the Simagic base, capped at 30 % (T10–T12) | implemented and unit-tested; not run on hardware yet, see [docs/GT7_SETUP.md](docs/GT7_SETUP.md) |
 
 ## Setup
 
@@ -35,7 +36,7 @@ There are two ways in. Most people only need the first.
 ### A. Flash and test – any OS, no build tools
 
 Everything needed on the computer next to the hardware is in one zip:
-[`dist/ps5-adapter-kit-0.1.0.zip`](dist/ps5-adapter-kit-0.1.0.zip) (firmware, diagnostic
+[`dist/ps5-adapter-kit-0.2.0.zip`](dist/ps5-adapter-kit-0.2.0.zip) (firmware, diagnostic
 tools, test docs). Download it, unzip, and follow its `START_HERE.md`. In short:
 
 1. Install Python 3 (Windows: tick "Add python.exe to PATH").
@@ -50,7 +51,8 @@ The firmware files are also directly in [`dist/`](dist/):
 
 | File | Use |
 | --- | --- |
-| `ps5-adapter-console-<ver>.uf2` | **for the PS5** |
+| `ps5-adapter-console-<ver>.uf2` | **for the PS5**, force feedback on (30 % cap) |
+| `ps5-adapter-console-noffb-<ver>.uf2` | for the PS5, no torque to the wheelbase (first acceptance test) |
 | `ps5-adapter-bench-<ver>.uf2` | for a computer only: same G29 interface plus a USB serial diagnostics port. **Never on the console.** |
 | `SHA256SUMS` | checksums of the UF2s and the kit |
 | `BUILDINFO.txt` | compiler, dependency commits, image sizes |
@@ -111,8 +113,9 @@ scripts/make_kit.sh
   `tools/adapter_monitor.py --wizard` (bench firmware); it prints the block to paste.
 * Steering and pedal direction (to confirm with `tools/adapter_monitor.py --axes`).
 * Clutch: disabled until verified.
-* Force feedback: disabled. Nothing is ever sent to the rig, in particular no Logitech
-  wheel commands.
+* Force feedback: on, capped at 30 % (`CFG_FFB_STRENGTH_PERCENT`), direction
+  `CFG_FFB_INVERT`, 2 s dead-man `CFG_FFB_STALE_MS`. Only translated Simagic packets
+  reach the base, never Logitech commands. Details: [docs/GT7_SETUP.md](docs/GT7_SETUP.md).
 
 Rebuild and reflash after editing.
 
@@ -133,7 +136,8 @@ the log. Details and LED codes: [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md).
 
 ## Documents
 
-* [docs/TEST_PLAN.md](docs/TEST_PLAN.md): physical tests T1–T9, pass criteria, results log
+* [docs/GT7_SETUP.md](docs/GT7_SETUP.md): GT Neo button plan for GT7, force feedback and its safety limits
+* [docs/TEST_PLAN.md](docs/TEST_PLAN.md): physical tests T1–T12, pass criteria, results log
 * [docs/HARDWARE.md](docs/HARDWARE.md): wiring and the power checks P1–P4
 * [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md): flash log design, record meanings, LED codes
 * [docs/CONSOLE_BEHAVIOR.md](docs/CONSOLE_BEHAVIOR.md): what the PS5 sees, compared with the reference adapter

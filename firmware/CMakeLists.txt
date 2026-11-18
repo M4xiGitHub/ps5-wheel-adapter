@@ -44,12 +44,13 @@ set(ADAPTER_SOURCES
     src/g29.c
     src/hid_desc.c
     src/input_map.c
+    src/ffb.c
 )
 
-function(add_adapter_variant TARGET BENCH)
+function(add_adapter_variant TARGET BENCH FFB)
     add_executable(${TARGET} ${ADAPTER_SOURCES})
     target_include_directories(${TARGET} PRIVATE src config)
-    target_compile_definitions(${TARGET} PRIVATE ADAPTER_BENCH=${BENCH})
+    target_compile_definitions(${TARGET} PRIVATE ADAPTER_BENCH=${BENCH} ADAPTER_FFB=${FFB})
     target_compile_options(${TARGET} PRIVATE -Wall -Wextra -Wno-unused-parameter)
     target_link_libraries(${TARGET}
         pico_stdlib
@@ -66,5 +67,6 @@ function(add_adapter_variant TARGET BENCH)
     pico_add_extra_outputs(${TARGET})
 endfunction()
 
-add_adapter_variant(ps5_adapter_console 0)  # for the PS5
-add_adapter_variant(ps5_adapter_bench 1)    # PC bench only: adds a CDC diagnostics port
+add_adapter_variant(ps5_adapter_console 0 1)        # for the PS5, force feedback on (capped)
+add_adapter_variant(ps5_adapter_console_noffb 0 0)  # for the PS5, no torque to the wheelbase
+add_adapter_variant(ps5_adapter_bench 1 1)          # PC bench only: CDC diagnostics port + FFB self-test

@@ -182,3 +182,33 @@ void input_build_report(const input_state_t* s, const input_config_t* cfg, g29_r
         // Clutch stays at 0xFFFF (released) from g29_report_neutral(): CFG_CLUTCH_ENABLED is 0.
     }
 }
+
+bool input_apply_holds(const input_state_t* s, const input_config_t* cfg, input_holds_t* h, g29_report_t* out,
+    uint32_t now_ms, uint32_t* next_ms) {
+    bool pending = false;
+    for (uint8_t i = 0; i < cfg->map_len; i++) {
+        const button_map_entry_t* e = &cfg->map[i];
+        if (e->min_hold_ms == 0 || e->target >= G29_BTN_COUNT || e->target >= G29_BTN_DPAD_UP) {
+            continue;
+        }
+        if (input_wheel_button(s, e->source_button)) {
+            h->until[e->target] = now_ms + e->min_hold_ms;
+            h->active[e->target] = true;
+        }
+    }
+    for (int t = 0; t < G29_BTN_COUNT; t++) {
+        if (!h->active[t]) {
+            continue;
+        }
+        if ((int32_t) (h->until[t] - now_ms) > 0) {
+            g29_set_button(out, (g29_button_t) t, true);
+            if (!pending || (int32_t) (h->until[t] - *next_ms) < 0) {
+                *next_ms = h->until[t];
+            }
+            pending = true;
+        } else {
+            h->active[t] = false;
+        }
+    }
+    return pending;
+}

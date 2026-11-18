@@ -33,6 +33,7 @@ cmake --build "$ROOT/build/firmware"
 mkdir -p "$ROOT/dist" "$ROOT/build/elf"
 rm -f "$ROOT"/dist/*.uf2 "$ROOT"/dist/*.elf "$ROOT/dist/SHA256SUMS" "$ROOT/dist/BUILDINFO.txt"
 cp "$ROOT/build/firmware/ps5_adapter_console.uf2" "$ROOT/dist/ps5-adapter-console-$VER.uf2"
+cp "$ROOT/build/firmware/ps5_adapter_console_noffb.uf2" "$ROOT/dist/ps5-adapter-console-noffb-$VER.uf2"
 cp "$ROOT/build/firmware/ps5_adapter_bench.uf2" "$ROOT/dist/ps5-adapter-bench-$VER.uf2"
 # ELFs (debug symbols) stay in build/: their debug info contains local absolute paths.
 cp "$ROOT/build/firmware/ps5_adapter_console.elf" "$ROOT/build/elf/ps5-adapter-console-$VER.elf"
@@ -50,7 +51,7 @@ cp "$ROOT/build/firmware/ps5_adapter_bench.elf" "$ROOT/build/elf/ps5-adapter-ben
     echo "$(printf '%-14s' "$name") $commit $rest"
   done < "$ROOT/deps.lock"
   echo
-  (cd "$ROOT/build/firmware" && arm-none-eabi-size ps5_adapter_console.elf ps5_adapter_bench.elf)
+  (cd "$ROOT/build/firmware" && arm-none-eabi-size ps5_adapter_console.elf ps5_adapter_console_noffb.elf ps5_adapter_bench.elf)
 } > "$ROOT/dist/BUILDINFO.txt"
 
 echo "== dist"

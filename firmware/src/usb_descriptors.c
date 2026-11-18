@@ -10,10 +10,17 @@
 #include "tusb.h"
 
 #if ADAPTER_BENCH
+// The bench build has its own serial number and bcdDevice so Windows gives it a device
+// node of its own instead of reusing a driver binding cached for the console build
+// (same VID/PID, one HID interface, no serial) on that port.
+#define DEVICE_BCD 0x01B0
+#define DEVICE_SERIAL_IDX 0x04
 #define DEVICE_CLASS TUSB_CLASS_MISC
 #define DEVICE_SUBCLASS MISC_SUBCLASS_COMMON
 #define DEVICE_PROTOCOL MISC_PROTOCOL_IAD
 #else
+#define DEVICE_BCD G29_BCD_DEVICE
+#define DEVICE_SERIAL_IDX 0x00
 #define DEVICE_CLASS 0x00
 #define DEVICE_SUBCLASS 0x00
 #define DEVICE_PROTOCOL 0x00
@@ -29,10 +36,10 @@ static const tusb_desc_device_t desc_device = {
     .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
     .idVendor = G29_VID,
     .idProduct = G29_PID,
-    .bcdDevice = G29_BCD_DEVICE,
+    .bcdDevice = DEVICE_BCD,
     .iManufacturer = 0x01,
     .iProduct = 0x02,
-    .iSerialNumber = 0x00,
+    .iSerialNumber = DEVICE_SERIAL_IDX,
     .bNumConfigurations = 0x01,
 };
 
@@ -67,6 +74,7 @@ static const char* const string_desc_arr[] = {
     "G29 Driving Force Racing Wheel",  // 2: product
 #if ADAPTER_BENCH
     "PS5 adapter bench diagnostics",   // 3: CDC interface
+    "PS5ADAPTER-BENCH",                // 4: serial number
 #endif
 };
 

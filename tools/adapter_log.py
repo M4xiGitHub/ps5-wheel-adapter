@@ -33,7 +33,15 @@ REC_TYPES = {
     7: "HID_DESC_CHUNK", 8: "LAYOUT", 9: "LAYOUT_FIELD", 10: "AUTH_DESC", 11: "AUTH", 12: "FIRST_INPUT",
     13: "INPUT_REJECT", 14: "USB_DEV", 15: "CONSOLE_REQ", 16: "CONSOLE_OUTPUT", 17: "PS_BUTTON",
     18: "SRC_BUTTON", 19: "HEARTBEAT", 20: "HEARTBEAT2", 21: "HEARTBEAT3", 22: "ERROR", 23: "LOG_FULL",
+    24: "FFB", 25: "HEARTBEAT4",
 }
+FFB_EVENTS = {1: "FORMAT", 2: "FIRST_CMD", 3: "UNSUPPORTED", 4: "EXTENDED", 5: "ACTIVE", 6: "RESET", 7: "STALE",
+              8: "OUT_MODE", 100: "BENCH_TEST"}
+FFB_RESETS = {1: "boot/new wheelbase", 2: "console gone", 3: "suspend", 4: "wheelbase gone", 5: "stale", 6: "test"}
+LG_TYPES = {0x00: "constant", 0x01: "spring", 0x02: "damper", 0x03: "auto-centre spring", 0x04: "saw up",
+            0x05: "saw down", 0x06: "trapezoid", 0x07: "rectangle", 0x08: "variable", 0x09: "ramp",
+            0x0A: "square", 0x0B: "hi-res spring", 0x0C: "hi-res damper", 0x0D: "hi-res auto-centre",
+            0x0E: "friction"}
 TYPE = {v: k for k, v in REC_TYPES.items()}
 
 ROLES = {0: "none", 1: "unknown", 2: "hub", 3: "auth", 4: "wheel", 5: "pedals", 6: "passive"}
@@ -177,6 +185,38 @@ def describe(r):
         return "ERROR %s detail %s" % (ERRORS.get(a, a), d.hex())
     if n == "LOG_FULL":
         return "flash slot full - later records were not stored"
+    if n == "FFB":
+        ev = FFB_EVENTS.get(a, "ev%d" % a)
+        arg, val = d[0], u32(d, 1)
+        if ev == "FORMAT":
+            return "ffb wheelbase output report %s: id %d, %d bytes, %d byte values" % (
+                "OK" if arg else "UNUSABLE - FFB off", val & 0xFF, (val >> 8) & 0xFF, (val >> 16) & 0xFFFF)
+        if ev == "FIRST_CMD":
+            return "ffb first console command %02x %02x %02x %02x %02x (op %d, type %s)" % (
+                arg, val & 0xFF, (val >> 8) & 0xFF, (val >> 16) & 0xFF, val >> 24, arg & 0x0F,
+                LG_TYPES.get(val & 0xFF, "0x%02x" % (val & 0xFF)) if (arg & 0x0F) in (0, 1, 12) else "-")
+        if ev == "UNSUPPORTED":
+            return "ffb console uses %s effects (not translated), count %d" % (LG_TYPES.get(arg, "0x%02x" % arg), val)
+        if ev == "EXTENDED":
+            return "ffb extended/other command (byte1 0x%02x) ignored, total %d" % (arg, val)
+        if ev == "ACTIVE":
+            m = val & 0xFFFF
+            m = m - 0x10000 if m & 0x8000 else m
+            return "ffb constant force %s (magnitude %d / 10000)" % ("STARTED" if arg else "stopped", m)
+        if ev == "RESET":
+            return "ffb reset: %s" % FFB_RESETS.get(arg, arg)
+        if ev == "STALE":
+            return "ffb STALE: no console command for %d ms with force held - stopped" % val
+        if ev == "OUT_MODE":
+            return "ffb wheelbase has no interrupt OUT endpoint: using control SET_REPORT"
+        if ev == "BENCH_TEST":
+            m = u16(d, 0)
+            return "ffb bench test raw magnitude %d" % (m - 0x10000 if m & 0x8000 else m)
+        return "ffb %s arg=%d value=%d" % (ev, arg, val)
+    if n == "HEARTBEAT4":
+        return "heartbeat ffb %s%s%s console_cmds=%d packets=%d unsupported=%d max_gap=%dms" % (
+            "running" if a & 1 else "idle", "" if a & 2 else " NO-FORMAT", " control-mode" if a & 4 else "",
+            u16(d, 0), u16(d, 2), u16(d, 4), u16(d, 6))
     return "a=%d d=%s" % (a, d.hex())
 
 

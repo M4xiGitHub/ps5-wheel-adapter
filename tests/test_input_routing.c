@@ -5,11 +5,11 @@
 #include "test_util.h"
 
 static const button_map_entry_t MAP[] = {
-    { 6, G29_BTN_PS },
-    { 13, G29_BTN_R1 },
-    { 1, G29_BTN_CROSS },
-    { 20, G29_BTN_DPAD_UP },
-    { 21, G29_BTN_DPAD_RIGHT },
+    { 6, G29_BTN_PS, 0 },
+    { 13, G29_BTN_R1, 0 },
+    { 1, G29_BTN_CROSS, 0 },
+    { 20, G29_BTN_DPAD_UP, 0 },
+    { 21, G29_BTN_DPAD_RIGHT, 0 },
 };
 static const input_config_t CFG = { MAP, sizeof(MAP) / sizeof(MAP[0]), false, true };
 
@@ -283,8 +283,48 @@ static void test_port_expectations(void) {
     CHECK(!devices_port_ok(NULL, PORT_A_RHPORT, 0));
 }
 
+static void test_min_hold_for_encoder_pulses(void) {
+    static const button_map_entry_t HMAP[] = { { 30, G29_BTN_DIAL_UP, 50 }, { 13, G29_BTN_R1, 0 } };
+    const input_config_t cfg = { HMAP, 2, false, true };
+    input_state_t s;
+    setup(&s);
+    input_holds_t h;
+    memset(&h, 0, sizeof(h));
+    uint8_t p[39];
+    g29_report_t r;
+    uint32_t next = 0;
+    const int enc[] = { 30 };
+    simagic_packet(p, 32768, 8, enc, 1);  // 3 ms encoder pulse
+    input_wheel_report(&s, p, 39);
+    input_build_report(&s, &cfg, &r);
+    CHECK(input_apply_holds(&s, &cfg, &h, &r, 1000, &next));
+    CHECK(g29_get_button(&r, G29_BTN_DIAL_UP));
+    CHECK_EQ(next, 1050);
+    simagic_packet(p, 32768, 8, NULL, 0);  // released after 3 ms
+    input_wheel_report(&s, p, 39);
+    input_build_report(&s, &cfg, &r);
+    CHECK(input_apply_holds(&s, &cfg, &h, &r, 1003, &next));
+    CHECK(g29_get_button(&r, G29_BTN_DIAL_UP));  // still visible to the console
+    input_build_report(&s, &cfg, &r);
+    CHECK(!input_apply_holds(&s, &cfg, &h, &r, 1050, &next));
+    CHECK(!g29_get_button(&r, G29_BTN_DIAL_UP));  // released after the hold
+    // Entries without a hold are untouched (paddle released immediately).
+    const int paddle[] = { 13 };
+    simagic_packet(p, 32768, 8, paddle, 1);
+    input_wheel_report(&s, p, 39);
+    input_build_report(&s, &cfg, &r);
+    input_apply_holds(&s, &cfg, &h, &r, 2000, &next);
+    CHECK(g29_get_button(&r, G29_BTN_R1));
+    simagic_packet(p, 32768, 8, NULL, 0);
+    input_wheel_report(&s, p, 39);
+    input_build_report(&s, &cfg, &r);
+    CHECK(!input_apply_holds(&s, &cfg, &h, &r, 2001, &next));
+    CHECK(!g29_get_button(&r, G29_BTN_R1));
+}
+
 int main(void) {
     RUN(test_scale);
+    RUN(test_min_hold_for_encoder_pulses);
     RUN(test_neutral_without_sources);
     RUN(test_steering_full_resolution);
     RUN(test_hat_and_dpad_buttons);

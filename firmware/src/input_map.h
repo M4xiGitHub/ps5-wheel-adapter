@@ -11,7 +11,14 @@
 typedef struct {
     uint8_t source_button;  // 1-based
     g29_button_t target;
+    uint8_t min_hold_ms;    // 0 = report exactly as the source; >0 = keep short pulses visible
 } button_map_entry_t;
+
+// Per-target hold timers for button_map_entry_t.min_hold_ms.
+typedef struct {
+    uint32_t until[G29_BTN_COUNT];
+    bool active[G29_BTN_COUNT];
+} input_holds_t;
 
 typedef struct {
     const button_map_entry_t* map;
@@ -54,6 +61,12 @@ bool input_wheel_button(const input_state_t* s, uint16_t n);
 
 // Builds the full G29 report. Missing sources give neutral values.
 void input_build_report(const input_state_t* s, const input_config_t* cfg, g29_report_t* out);
+
+// Applies min_hold_ms: a press of a source with a hold time keeps its (non-dpad)
+// target pressed until now + hold. Returns true while a hold is running and sets
+// *next_ms to when the report must be rebuilt.
+bool input_apply_holds(const input_state_t* s, const input_config_t* cfg, input_holds_t* h, g29_report_t* out,
+    uint32_t now_ms, uint32_t* next_ms);
 
 // Raw source values for diagnostics; return false when unavailable.
 bool input_raw_steer(const input_state_t* s, int32_t* v);

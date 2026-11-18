@@ -42,5 +42,9 @@ SOFTWARE.
 The UF2 images link the Pico SDK, TinyUSB and Pico-PIO-USB; keep their notices with any
 binaries you pass on.
 
+The Simagic force-feedback packet layout in `firmware/src/ffb.c` follows the protocol
+implemented by JacKeTUs/simagic-ff (GPL-2.0, Copyright (c) 2023 Makarenko Oleg). Only the
+protocol facts (report sub-command bytes and field order) were used; no code was copied.
+
 Code from bilgon32/ps5-wheel-adapter (no project-wide licence) and from
 Pelsin/RP2040-DualSense-Mayflash-S5 was read for reference only and not copied.

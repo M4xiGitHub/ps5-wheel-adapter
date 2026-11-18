@@ -7,6 +7,7 @@
 // Single cooperative loop on core 0, as in jfedor2/wheel-adapter: tuh_task(),
 // tud_task(), then the application tasks. Every TinyUSB host operation used here
 // is asynchronous; nothing in the loop waits for the bus.
+#include <stdlib.h>
 #include <string.h>
 
 #include "hardware/clocks.h"
@@ -26,6 +27,7 @@
 #include "crc32.h"
 #include "devices.h"
 #include "diag.h"
+#include "ffb.h"
 #include "g29.h"
 #include "input_map.h"
 
@@ -34,7 +36,7 @@
 #endif
 
 #define FW_VERSION_MAJOR 0
-#define FW_VERSION_MINOR 1
+#define FW_VERSION_MINOR 2
 #define FW_VERSION_PATCH 0
 #define FW_VERSION ((FW_VERSION_MAJOR << 16) | (FW_VERSION_MINOR << 8) | FW_VERSION_PATCH)
 
@@ -43,13 +45,19 @@
 #define HEARTBEAT_MS 5000
 #define WATCHDOG_MS 2000
 
-_Static_assert(CFG_FFB_ENABLED == 0, "force feedback is not implemented for milestone 1");
+_Static_assert(CFG_FFB_STRENGTH_PERCENT >= 0 && CFG_FFB_STRENGTH_PERCENT <= 100, "FFB cap must be 0..100 %");
 _Static_assert(CFG_CLUTCH_ENABLED == 0, "clutch mapping is not verified yet");
 
 // ------------------------------------------------------------------ state
 
 static diag_t g_diag;
 static auth_t g_auth;
+static ffb_t g_ffb;
+static input_holds_t g_holds;
+static uint32_t g_hold_next_ms;
+static bool g_hold_pending;
+static bool g_ffb_use_control __attribute__((unused));  // wheelbase interface has no interrupt OUT endpoint
+static uint8_t g_ffb_ctrl_buf[1 + FFB_OUT_MAX] __attribute__((unused));
 static input_state_t g_input;
 static const button_map_entry_t g_button_map[] = { CFG_BUTTON_MAP };
 static const input_config_t g_input_cfg = {
@@ -142,6 +150,12 @@ static void auth_event(void* ctx, auth_event_t ev, uint8_t a, uint32_t b) {
         default:
             break;
     }
+}
+
+static void ffb_event(void* ctx, ffb_event_t ev, uint8_t a, uint32_t b) {
+    (void) ctx;
+    log8(DREC_FFB, (uint8_t) ev, a, (uint8_t) b, (uint8_t) (b >> 8), (uint8_t) (b >> 16), (uint8_t) (b >> 24), 0, 0, 0,
+        ev != FFB_EV_FIRST_CMD);
 }
 
 static void log_field(uint8_t field_id, const hid_field_t* f) {
@@ -309,6 +323,13 @@ void tuh_hid_mount_cb(uint8_t daddr, uint8_t idx, uint8_t const* desc, uint16_t 
                 g_input.wheel_valid = false;
                 g_wheel = (hid_slot_t) { true, daddr, idx };
                 tuh_hid_receive_report(daddr, idx);
+#if CFG_FFB_ENABLED
+                // The FFB output report of the same interface (as simagic-ff uses);
+                // first action towards the base: stop every effect block.
+                g_ffb_use_control = false;
+                ffb_set_output_format(&g_ffb, desc, len);
+                ffb_reset(&g_ffb, FFB_RESET_BOOT);
+#endif
             }
             break;
         case ROLE_PEDALS:
@@ -338,6 +359,7 @@ void tuh_hid_umount_cb(uint8_t daddr, uint8_t idx) {
         input_wheel_lost(&g_input);  // steering centred, hat and buttons released
         memset(g_src_buttons, 0, sizeof(g_src_buttons));
         g_input_dirty = true;
+        ffb_reset(&g_ffb, FFB_RESET_WHEEL_GONE);
     }
     if (g_pedals.present && g_pedals.daddr == daddr && g_pedals.idx == idx) {
         g_pedals.present = false;
@@ -405,9 +427,17 @@ void tuh_hid_get_report_complete_cb(uint8_t daddr, uint8_t idx, uint8_t report_i
 }
 
 void tuh_hid_set_report_complete_cb(uint8_t daddr, uint8_t idx, uint8_t report_id, uint8_t report_type, uint16_t len) {
-    (void) report_type;
     if (g_auth_dev.present && g_auth_dev.daddr == daddr && g_auth_dev.idx == idx) {
         auth_complete(&g_auth, report_id, len, now_ms());
+    } else if (g_wheel.present && g_wheel.daddr == daddr && g_wheel.idx == idx && report_type == HID_REPORT_TYPE_OUTPUT) {
+        ffb_packet_done(&g_ffb, len > 0);
+    }
+}
+
+void tuh_hid_report_sent_cb(uint8_t daddr, uint8_t idx, uint8_t const* report, uint16_t len) {
+    (void) report;
+    if (g_wheel.present && g_wheel.daddr == daddr && g_wheel.idx == idx) {
+        ffb_packet_done(&g_ffb, len > 0);
     }
 }
 
@@ -430,11 +460,13 @@ void tud_mount_cb(void) {
 
 void tud_umount_cb(void) {
     g_console_configured = false;
+    ffb_reset(&g_ffb, FFB_RESET_CONSOLE_GONE);
     diag_push_u32(&g_diag, now_ms(), DREC_USB_DEV, 2, g_bus_resets, 0, true);
 }
 
 void tud_suspend_cb(bool remote_wakeup_en) {
     g_suspended = true;
+    ffb_reset(&g_ffb, FFB_RESET_SUSPEND);
     diag_push_u32(&g_diag, now_ms(), DREC_USB_DEV, 3, g_bus_resets, remote_wakeup_en, true);
 }
 
@@ -484,9 +516,12 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
     if (auth_console_set_report(&g_auth, report_id, buffer, bufsize, now_ms())) {
         return;
     }
-    // Everything else is console output (force feedback, LEDs): counted and dropped
-    // while CFG_FFB_ENABLED is 0. Nothing is ever forwarded to the rig.
+    // Everything else is console output (force feedback, LEDs). It is never forwarded
+    // as-is: ffb.c translates steady forces into Simagic packets under the cap.
     g_cnt.console_out++;
+#if CFG_FFB_ENABLED
+    ffb_console_output(&g_ffb, report_id, buffer, bufsize, now_ms());
+#endif
     if (g_cnt.console_out == 1) {
         uint8_t d[8] = { 0 };
         for (uint16_t i = 0; i < 8 && i < bufsize; i++) {
@@ -512,10 +547,50 @@ static void auth_task(uint32_t t) {
     auth_submitted(&g_auth, ok, t);
 }
 
-static void report_task(void) {
+static void ffb_task(uint32_t t) {
+#if CFG_FFB_ENABLED
+    if (!g_wheel.present || !g_ffb.out_ok) {
+        return;
+    }
+    uint8_t* payload = &g_ffb_ctrl_buf[1];
+    uint8_t n = ffb_next_packet(&g_ffb, t, payload);
+    if (n == 0) {
+        return;
+    }
+    bool ok = false;
+    if (!g_ffb_use_control) {
+        if (!tuh_hid_send_ready(g_wheel.daddr, g_wheel.idx)) {
+            ffb_packet_done(&g_ffb, false);  // endpoint busy: rebuilt from current state next loop
+            return;
+        }
+        ok = tuh_hid_send_report(g_wheel.daddr, g_wheel.idx, g_ffb.out_report_id, payload, n);
+        if (!ok) {
+            // Ready but refused: the interface has no interrupt OUT endpoint.
+            g_ffb_use_control = true;
+            ffb_event(NULL, FFB_EV_OUT_MODE, 2, 0);
+        }
+    }
+    if (g_ffb_use_control) {
+        g_ffb_ctrl_buf[0] = g_ffb.out_report_id;
+        ok = tuh_hid_set_report(g_wheel.daddr, g_wheel.idx, g_ffb.out_report_id, HID_REPORT_TYPE_OUTPUT,
+            g_ffb.out_report_id ? g_ffb_ctrl_buf : payload, (uint16_t) (g_ffb.out_report_id ? n + 1 : n));
+    }
+    if (!ok) {
+        ffb_packet_done(&g_ffb, false);
+    }
+#else
+    (void) t;
+#endif
+}
+
+static void report_task(uint32_t t) {
+    if (g_hold_pending && (int32_t) (t - g_hold_next_ms) >= 0) {
+        g_input_dirty = true;
+    }
     if (g_input_dirty) {
         g_input_dirty = false;
         input_build_report(&g_input, &g_input_cfg, &g_report);
+        g_hold_pending = input_apply_holds(&g_input, &g_input_cfg, &g_holds, &g_report, t, &g_hold_next_ms);
         bool ps = g29_get_button(&g_report, G29_BTN_PS);
         if (ps != g_ps_pressed) {
             g_ps_pressed = ps;
@@ -572,6 +647,10 @@ static void heartbeat_task(uint32_t t) {
     log_u16x4(DREC_HEARTBEAT, heartbeat_flags(), t / 1000, g_cnt.reports_sent, g_cnt.wheel_rx, g_cnt.pedal_rx, false);
     log_u16x4(DREC_HEARTBEAT2, (uint8_t) g_auth.ds, g_auth.jobs_ok, g_auth.delivered, g_auth.jobs_failed, g_cnt.console_out, false);
     log_u16x4(DREC_HEARTBEAT3, 0, g_diag.flash_dropped, g_diag.live_dropped, g_cnt.send_busy, g_cnt.input_rejects, false);
+#if CFG_FFB_ENABLED
+    log_u16x4(DREC_HEARTBEAT4, (uint8_t) (g_ffb.running | (g_ffb.out_ok << 1) | (g_ffb_use_control << 2)), g_ffb.rx_cmds,
+        g_ffb.tx_packets, g_ffb.unsupported, g_ffb.max_gap_ms, false);
+#endif
 }
 
 // LED: fast blink = not configured by a host; double blink = configured but no valid
@@ -612,6 +691,10 @@ typedef struct __attribute__((packed)) {
     uint16_t g29_wheel, g29_throttle, g29_brake, g29_clutch;
     uint32_t reports_sent, wheel_rx, pedal_rx;
     uint32_t auth_jobs_ok, auth_delivered, auth_jobs_failed;
+    int16_t ffb_mag;   // last magnitude sent to the wheelbase (-10000..10000)
+    uint8_t ffb_flags; // bit0 running, bit1 output format ok, bit2 control-transfer mode, bit3 enabled
+    uint8_t ffb_pct;   // cap
+    uint32_t ffb_rx;   // console FFB commands
 } bench_status_t;
 
 static const char hexdig[] = "0123456789abcdef";
@@ -630,7 +713,7 @@ static uint32_t hex_line(char* out, char tag, const uint8_t* p, uint32_t n) {
 
 static void bench_task(uint32_t t) {
     static uint32_t last_status;
-    static char rx_line[16];
+    static char rx_line[24];
     static uint8_t rx_len;
     char line[2 + 2 * sizeof(bench_status_t) + 2];
 
@@ -640,6 +723,11 @@ static void bench_task(uint32_t t) {
             rx_line[rx_len] = 0;
             if (strcmp(rx_line, "BOOTSEL") == 0) {
                 reset_usb_boot(0, 0);
+            } else if (strncmp(rx_line, "FFBTEST ", 8) == 0) {
+                // Raw magnitude -10000..10000 before the cap, 600 ms, invert not applied.
+                int v = atoi(&rx_line[8]);
+                ffb_test(&g_ffb, (int16_t) (v > 10000 ? 10000 : v < -10000 ? -10000 : v), 600, t);
+                log8(DREC_FFB, 100, (uint8_t) v, (uint8_t) ((uint16_t) v >> 8), 0, 0, 0, 0, 0, 0, true);
             }
             rx_len = 0;
         } else if (rx_len < sizeof(rx_line) - 1) {
@@ -686,6 +774,10 @@ static void bench_task(uint32_t t) {
         s.auth_jobs_ok = g_auth.jobs_ok;
         s.auth_delivered = g_auth.delivered;
         s.auth_jobs_failed = g_auth.jobs_failed;
+        s.ffb_mag = g_ffb.sent_mag;
+        s.ffb_flags = (uint8_t) (g_ffb.running | (g_ffb.out_ok << 1) | (g_ffb_use_control << 2) | (CFG_FFB_ENABLED << 3));
+        s.ffb_pct = g_ffb.strength_percent;
+        s.ffb_rx = g_ffb.rx_cmds;
         uint32_t n = hex_line(line, 'S', (const uint8_t*) &s, sizeof(s));
         tud_cdc_write(line, n);
     }
@@ -710,6 +802,7 @@ int main(void) {
     diag_init(&g_diag);
     g_diag.live_enabled = ADAPTER_BENCH;
     auth_init(&g_auth, auth_event, NULL);
+    ffb_init(&g_ffb, CFG_FFB_STRENGTH_PERCENT, CFG_FFB_INVERT, CFG_FFB_STALE_MS, ffb_event, NULL);
     g29_report_neutral(&g_report);
     memset(&g_last_sent, 0xFF, sizeof(g_last_sent));
 
@@ -743,7 +836,8 @@ int main(void) {
         tud_task();
         uint32_t t = now_ms();
         auth_task(t);
-        report_task();
+        report_task(t);
+        ffb_task(t);
         port_event_task();
         heartbeat_task(t);
         led_task(t);

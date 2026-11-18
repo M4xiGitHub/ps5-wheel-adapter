@@ -39,14 +39,28 @@ py tools\adapter_monitor.py --seconds 30
 ```
 While it runs: turn the wheel, press each pedal, press a few wheel buttons.
 
+If it says "Bench build not found", it now lists what Windows sees (COM ports and USB
+devices with the adapter's IDs) and which of the likely causes applies. Send that output
+and say what the Pico's LED does right after plugging in.
+
 ## 4. Ranges and button map
 ```
 py tools\adapter_monitor.py --axes --seconds 20
 py tools\adapter_monitor.py --wizard
 ```
 `--axes`: wheel lock to lock, then each pedal fully down and up.
-`--wizard`: press the wheel button you want for each PS control (Enter skips one).
-At least Cross is needed to pick your user on the PS5.
+`--wizard`: for each GT7 control it suggests a GT Neo control; press the one you want
+(Enter skips). At least Cross is needed to pick your user on the PS5. If it cannot
+start, it prints what the adapter saw: send that.
+
+## 4b. Force feedback on the bench (hands on the wheel)
+Lower the base's own strength first if Simagic's software keeps one. Then:
+```
+py tools\adapter_monitor.py --ffb-test 1000
+py tools\adapter_monitor.py --ffb-test -1000
+```
+Each gives 3 % of the base's force for 0.6 s. Note which way the wheel turns each
+time. Emergency stop: the wheelbase power switch. Details: `docs\GT7_SETUP.md`.
 
 ## 5. Signing through the adapter (same connections as step 3)
 ```
@@ -58,13 +72,14 @@ Wanted: `nonce signature: VALID`.
 Pico's Micro-USB **unplugged**, rig connected to port B and wheelbase on: measure DC
 voltage between Pico pin 40 (VBUS) and pin 38 (GND). Expected about 0 V. Note the value.
 
-➜ Send the output of steps 1, 3, 4, 5 and the step-6 voltage.
+➜ Send the output of steps 1, 3, 4, 4b, 5 and the step-6 voltage.
 
 ---
 
 ## Later: PS5 test and reading its log
-The console firmware (`ps5-adapter-console-…uf2`) and the console tests are in
-`docs\TEST_PLAN.md` (T7–T9). After a PS5 session the log is read like this:
+First PS5 run: `ps5-adapter-console-noffb-VERSION.uf2` (no torque). With force feedback:
+`ps5-adapter-console-VERSION.uf2` (30 % cap), following `docs\GT7_SETUP.md` T11.
+Console tests: `docs\TEST_PLAN.md` (T7–T12). After a PS5 session the log is read like this:
 
 1. Unplug the adapter from the PS5. Hold BOOTSEL, plug it into this PC, release. The
    firmware does not start in this mode, so the PS5 session is not overwritten.

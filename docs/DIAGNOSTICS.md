@@ -58,6 +58,7 @@ boot (`--boot N` / `--all` for others), and saves the captured HID report descri
 | Response to console | `CONSOLE_F2 console told READY`, `CONSOLE_F1_PAGE`, `DELIVERED` |
 | Failures | `DS_STEP_FAIL`, `DS_FAILED`, `DS_XFER_TIMEOUT`, `CONSOLE_NONCE_BAD`, `INPUT_REJECT`, `ERROR` |
 | PS / user selection | `PS_BUTTON PRESSED` (actual acceptance is only visible on the TV) |
+| Force feedback | `ffb wheelbase output report OK/UNUSABLE`, `ffb first console command …` (one per command kind GT7 sends), `ffb console uses … effects (not translated)`, `ffb constant force STARTED/stopped`, `ffb STALE`, `heartbeat ffb … max_gap` |
 | Session length | last `HEARTBEAT up=…s` |
 
 ## Live view (bench build only)

@@ -4,7 +4,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VER="$(awk '/^#define FW_VERSION_(MAJOR|MINOR|PATCH) /{printf "%s%s", sep, $3; sep="."}' "$ROOT/firmware/src/main.c")"
-for f in "ps5-adapter-console-$VER.uf2" "ps5-adapter-bench-$VER.uf2"; do
+for f in "ps5-adapter-console-$VER.uf2" "ps5-adapter-console-noffb-$VER.uf2" "ps5-adapter-bench-$VER.uf2"; do
   [ -f "$ROOT/dist/$f" ] || { echo "dist/$f missing: run scripts/build.sh"; exit 1; }
 done
 
@@ -13,11 +13,12 @@ STAGE="$ROOT/build/kit/$NAME"
 rm -rf "$ROOT/build/kit"
 mkdir -p "$STAGE/firmware" "$STAGE/tools" "$STAGE/docs"
 
-cp "$ROOT/dist/ps5-adapter-console-$VER.uf2" "$ROOT/dist/ps5-adapter-bench-$VER.uf2" "$STAGE/firmware/"
+cp "$ROOT/dist/ps5-adapter-console-$VER.uf2" "$ROOT/dist/ps5-adapter-console-noffb-$VER.uf2" \
+   "$ROOT/dist/ps5-adapter-bench-$VER.uf2" "$STAGE/firmware/"
 (cd "$STAGE/firmware" && shasum -a 256 ./*.uf2 | sed 's# \./# #' > SHA256SUMS)
 cp "$ROOT"/tools/adapter_log.py "$ROOT"/tools/adapter_monitor.py "$ROOT"/tools/auth_probe.py \
    "$ROOT"/tools/hid_probe.py "$STAGE/tools/"
-cp "$ROOT"/docs/TEST_PLAN.md "$ROOT"/docs/HARDWARE.md "$ROOT"/docs/DIAGNOSTICS.md "$STAGE/docs/"
+cp "$ROOT"/docs/TEST_PLAN.md "$ROOT"/docs/HARDWARE.md "$ROOT"/docs/DIAGNOSTICS.md "$ROOT"/docs/GT7_SETUP.md "$STAGE/docs/"
 grep -E '^(hidapi|pyserial|cryptography)==' "$ROOT/requirements.txt" > "$STAGE/requirements-tools.txt"
 sed "s/VERSION/$VER/g" "$ROOT/scripts/kit_START_HERE.md" > "$STAGE/START_HERE.md"
 cp "$ROOT/THIRD_PARTY_NOTICES.md" "$STAGE/"

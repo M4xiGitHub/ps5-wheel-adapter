@@ -11,7 +11,7 @@ HID input, Hori detection or a delivered signature are intermediate results.
 
 | Test | Date | Firmware (SHA-256 prefix) | Result | Notes |
 | --- | --- | --- | --- | --- |
-| Automated host tests | 2026-11-18 | console 2aa676cb… | pass (5/5 suites) | not hardware evidence |
+| Automated host tests | 2026-11-18 | v0.2.0 console e24fe9f9… | pass (6/6 suites incl. FFB cap) | not hardware evidence |
 | T1 Hori signs | | | pending | |
 | T2 Rig descriptors | | | pending | |
 | T3 Enumeration on both ports | | | pending | |
@@ -21,6 +21,9 @@ HID input, Hori detection or a delivered signature are intermediate results.
 | T7 PS5 accept + PS/user select + GT7 | | | pending | |
 | T8 15 min continuous in GT7 | | | pending | |
 | T9 Repeat startups ×3 | | | pending | |
+| T10 FFB bench (format, direction) | | | pending | see docs/GT7_SETUP.md |
+| T11 FFB in GT7, low speed, centring | | | pending | |
+| T12 FFB log review (command mix, gaps) | | | pending | |
 
 ## T1 – Does this Hori sign? (computer only)
 You: plug the Hori straight into the computer.
@@ -77,7 +80,8 @@ See docs/HARDWARE.md, P1–P4. Do P3 before the first console test.
 
 ## T7 – PS5 acceptance, PS/user selection, GT7 controls (console build)
 You:
-1. Flash `dist/ps5-adapter-console-<ver>.uf2`.
+1. Flash `dist/ps5-adapter-console-noffb-<ver>.uf2` for this first run (no torque to the
+   wheelbase); switch to the FFB build after T10.
 2. Hori on port A, rig on port B, wheelbase powered, then plug the adapter into the PS5
    (PS5 already on, at the home screen).
 3. Watch the LED: fast blink → slow blink → solid within ~10 s.
@@ -93,6 +97,10 @@ Pass: user selection works, GT7 drives, and the log shows `CONFIGURED`, a `CONSO
 Keep driving in GT7 for at least 15 minutes (past the 8-minute timeout of
 unauthenticated controllers). Pass: no disconnect/"controller not supported" message;
 log covers ≥ 900 s with heartbeats, no `DS_FAILED`, `delivered` ≥ 1.
+
+## T10–T12 – Force feedback
+Procedure and pass criteria: [GT7_SETUP.md](GT7_SETUP.md#force-feedback-bring-up-do-in-order).
+Emergency stop is the wheelbase power switch.
 
 ## T9 – Repeat startup
 Three times each: (a) PS5 fully off → power on with everything connected; (b) unplug and

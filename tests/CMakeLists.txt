@@ -10,9 +10,9 @@ include_directories(${FW} ${CMAKE_CURRENT_LIST_DIR})
 
 add_library(fwcore STATIC
     ${FW}/auth.c ${FW}/crc32.c ${FW}/devices.c ${FW}/diag.c
-    ${FW}/g29.c ${FW}/hid_desc.c ${FW}/input_map.c)
+    ${FW}/g29.c ${FW}/hid_desc.c ${FW}/input_map.c ${FW}/ffb.c)
 
-foreach(t test_hid_g29 test_input_routing test_auth test_diag)
+foreach(t test_hid_g29 test_input_routing test_auth test_diag test_ffb)
     add_executable(${t} ${t}.c)
     target_link_libraries(${t} fwcore)
     add_test(NAME ${t} COMMAND ${t})
