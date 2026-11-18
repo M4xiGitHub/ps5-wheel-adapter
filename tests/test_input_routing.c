@@ -367,7 +367,7 @@ static void test_captured_real_descriptors(void) {
     CHECK_EQ(d.role, ROLE_PEDALS);
     // FFB uses the first output report, as simagic-ff does: ID 1, 20 bytes.
     ffb_t f;
-    ffb_init(&f, 30, false, 2000, NULL, NULL);
+    ffb_init(&f, 30, false, NULL, NULL);
     CHECK(ffb_set_output_format(&f, CAPTURED_SIMAGIC_0522, sizeof(CAPTURED_SIMAGIC_0522)));
     CHECK_EQ(f.out_report_id, 1);
     CHECK_EQ(f.out_len, 20);

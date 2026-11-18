@@ -18,6 +18,10 @@
 // damper, friction and periodic types are counted and ignored until a capture
 // shows GT7 uses them. Every magnitude is scaled by strength_percent (the cap) and
 // clamped, so no console command can exceed it.
+//
+// Like a real Logitech wheel, a force is held until the console changes or stops
+// it: GT7 sends commands only on change (measured gaps > 2 s while driving), so
+// there is no traffic-based timeout.
 #ifndef FFB_H
 #define FFB_H
 
@@ -41,7 +45,7 @@ typedef enum {
     FFB_EV_EXTENDED,         // a: byte1 of an 0xF8/0xFx command, b: count
     FFB_EV_ACTIVE,           // a: 1 started / 0 stopped, b: magnitude sent (int16 as uint)
     FFB_EV_RESET,            // a: reason (ffb_reset_t)
-    FFB_EV_STALE,            // a: 0, b: ms since last console command
+    FFB_EV_STALE,            // unused since 0.2.4 (no traffic timeout); kept for log compatibility
     FFB_EV_OUT_MODE,         // a: 1 interrupt OUT, 2 control SET_REPORT
 } ffb_event_t;
 
@@ -50,7 +54,7 @@ typedef enum {
     FFB_RESET_CONSOLE_GONE = 2,
     FFB_RESET_SUSPEND = 3,
     FFB_RESET_WHEEL_GONE = 4,
-    FFB_RESET_STALE = 5,
+    FFB_RESET_STALE = 5,     // unused since 0.2.4
     FFB_RESET_TEST = 6,
 } ffb_reset_t;
 
@@ -66,7 +70,6 @@ typedef struct {
     // configuration
     uint8_t strength_percent;  // cap, 0..100
     bool invert;
-    uint32_t stale_ms;         // stop a held non-zero force without console traffic
     ffb_event_cb_t ev;
     void* ev_ctx;
 
@@ -97,13 +100,13 @@ typedef struct {
     uint8_t pending_stop_bit;
 
     // statistics
-    uint32_t rx_cmds, rx_bad, ext_cmds, unsupported, tx_packets, tx_failed, stale_stops;
+    uint32_t rx_cmds, rx_bad, ext_cmds, unsupported, tx_packets, tx_failed;
     uint32_t max_gap_ms;
     uint16_t seen_pairs[16];  // bit per force type, per operation, for first-seen logging
     uint16_t unsupported_by_type[16];
 } ffb_t;
 
-void ffb_init(ffb_t* f, uint8_t strength_percent, bool invert, uint32_t stale_ms, ffb_event_cb_t ev, void* ctx);
+void ffb_init(ffb_t* f, uint8_t strength_percent, bool invert, ffb_event_cb_t ev, void* ctx);
 
 // Finds the wheelbase's first output report (as simagic-ff does) and checks it can
 // carry the 13-byte set-effect packet with 8-bit values. Disables FFB otherwise.
@@ -112,7 +115,7 @@ bool ffb_set_output_format(ffb_t* f, const uint8_t* desc, uint16_t len);
 // One console output report as delivered by TinyUSB's tud_hid_set_report_cb.
 void ffb_console_output(ffb_t* f, uint8_t report_id, const uint8_t* buf, uint16_t len, uint32_t now_ms);
 
-// Clears all forces (console gone, suspend, wheel gone, boot) and queues stops.
+// Clears all forces (console gone, suspend, wheelbase gone, boot) and queues stops.
 void ffb_reset(ffb_t* f, ffb_reset_t reason);
 
 // Bench self-test: apply mag (-10000..10000, before the cap) for duration_ms.

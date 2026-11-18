@@ -206,7 +206,7 @@ def describe(r):
         if ev == "RESET":
             return "ffb reset: %s" % FFB_RESETS.get(arg, arg)
         if ev == "STALE":
-            return "ffb STALE: no console command for %d ms with force held - stopped" % val
+            return "ffb STALE (firmware 0.2.0-0.2.3 only): no console command for %d ms, force cut" % val
         if ev == "OUT_MODE":
             return "ffb wheelbase has no interrupt OUT endpoint: using control SET_REPORT"
         if ev == "BENCH_TEST":

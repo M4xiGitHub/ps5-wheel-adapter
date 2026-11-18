@@ -78,7 +78,7 @@ voltage between Pico pin 40 (VBUS) and pin 38 (GND). Expected about 0 V. Note th
 
 ## Later: PS5 test and reading its log
 First PS5 run: `ps5-adapter-console-noffb-VERSION.uf2` (no torque). With force feedback:
-`ps5-adapter-console-VERSION.uf2` (30 % cap), following `docs\GT7_SETUP.md` T11.
+`ps5-adapter-console-VERSION.uf2` (60 % cap), following `docs\GT7_SETUP.md` T11.
 Console tests: `docs\TEST_PLAN.md` (T7–T12). After a PS5 session the log is read like this:
 
 1. Unplug the adapter from the PS5. Hold BOOTSEL, plug it into this PC, release. The

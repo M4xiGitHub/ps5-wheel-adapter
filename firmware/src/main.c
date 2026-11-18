@@ -37,7 +37,7 @@
 
 #define FW_VERSION_MAJOR 0
 #define FW_VERSION_MINOR 2
-#define FW_VERSION_PATCH 3
+#define FW_VERSION_PATCH 4
 #define FW_VERSION ((FW_VERSION_MAJOR << 16) | (FW_VERSION_MINOR << 8) | FW_VERSION_PATCH)
 
 #define PORT_B_DP_PIN 2
@@ -804,7 +804,7 @@ int main(void) {
     diag_init(&g_diag);
     g_diag.live_enabled = ADAPTER_BENCH;
     auth_init(&g_auth, auth_event, NULL);
-    ffb_init(&g_ffb, CFG_FFB_STRENGTH_PERCENT, CFG_FFB_INVERT, CFG_FFB_STALE_MS, ffb_event, NULL);
+    ffb_init(&g_ffb, CFG_FFB_STRENGTH_PERCENT, CFG_FFB_INVERT, ffb_event, NULL);
     g29_report_neutral(&g_report);
     memset(&g_last_sent, 0xFF, sizeof(g_last_sent));
 

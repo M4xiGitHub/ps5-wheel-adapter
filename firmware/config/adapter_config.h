@@ -64,16 +64,17 @@
 #endif
 
 // Hard cap: full G29 force from the console = this percentage of the wheelbase's
-// force range. Enforced on every packet; nothing can exceed it. [spec: 30]
-#define CFG_FFB_STRENGTH_PERCENT 30
+// force range. Enforced on every packet; nothing can exceed it.
+// Owner's choice: 30 % felt too weak in GT7 (2026-11-18), raised to 60 %.
+#define CFG_FFB_STRENGTH_PERCENT 60
 
 // Direction: set to 1 if, in GT7, the wheel pushes AWAY from centre when driving
 // straight (it must pull back towards centre). See docs/GT7_SETUP.md. [measure]
 // Bench 2026-11-18: a positive Simagic magnitude turns the wheel anticlockwise.
 #define CFG_FFB_INVERT 0
 
-// Dead-man: a non-zero force held with no console FFB traffic for this long is
-// stopped. The logged maximum console gap shows whether it needs adjusting.
-#define CFG_FFB_STALE_MS 2000
+// No traffic timeout: GT7 sends force commands only when they change (gaps of more
+// than 2 s measured while driving), so a held force is kept, as a real G29 does.
+// Forces still stop at boot, console unconfigure/suspend and wheelbase loss.
 
 #endif

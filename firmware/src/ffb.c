@@ -22,11 +22,10 @@ static void emit(ffb_t* f, ffb_event_t ev, uint8_t a, uint32_t b) {
     }
 }
 
-void ffb_init(ffb_t* f, uint8_t strength_percent, bool invert, uint32_t stale_ms, ffb_event_cb_t ev, void* ctx) {
+void ffb_init(ffb_t* f, uint8_t strength_percent, bool invert, ffb_event_cb_t ev, void* ctx) {
     memset(f, 0, sizeof(*f));
     f->strength_percent = strength_percent > 100 ? 100 : strength_percent;
     f->invert = invert;
-    f->stale_ms = stale_ms;
     f->ev = ev;
     f->ev_ctx = ctx;
     for (int i = 0; i < 4; i++) {
@@ -241,13 +240,6 @@ uint8_t ffb_next_packet(ffb_t* f, uint32_t now_ms, uint8_t* out) {
     }
     if (f->test_active && !test_running(f, now_ms)) {
         f->test_active = false;
-    }
-    // Dead-man: a non-zero force held without any console traffic is stopped.
-    if (!f->test_active && console_wants_run(f) && ffb_console_force(f) != 0 && f->stale_ms &&
-        (uint32_t) (now_ms - f->last_cmd_ms) > f->stale_ms) {
-        f->stale_stops++;
-        emit(f, FFB_EV_STALE, 0, now_ms - f->last_cmd_ms);
-        ffb_reset(f, FFB_RESET_STALE);
     }
 
     memset(out, 0, f->out_len);

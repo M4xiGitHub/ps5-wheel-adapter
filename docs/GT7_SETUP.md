@@ -4,7 +4,7 @@
 
 | UF2 | Force feedback | Use |
 | --- | --- | --- |
-| `ps5-adapter-console-<ver>.uf2` | on, capped at **30 %** | normal GT7 use, once T10–T12 have passed |
+| `ps5-adapter-console-<ver>.uf2` | on, capped at **60 %** | normal GT7 use, once T10–T12 have passed |
 | `ps5-adapter-console-noffb-<ver>.uf2` | off, nothing is sent to the wheelbase | first PS5 acceptance test (T7), or any time you want no torque |
 | `ps5-adapter-bench-<ver>.uf2` | on, capped, plus `--ffb-test` | computer only |
 
@@ -19,7 +19,7 @@ PS5/GT7 ──G29 FFB commands──► adapter ──Simagic FFB packets──�
 * **Translated:** steady forces (Logitech constant and zero-step variable force), which
   is what GT7 is reported to use (bilgon32, PS5/GT7). Download, play, stop and refresh
   commands are tracked per slot; the forces of the playing slots are summed.
-* **Cap:** full G29 force from GT7 = **30 %** of the wheelbase's force range
+* **Cap:** full G29 force from GT7 = **60 %** of the wheelbase's force range (raised from 30 % after the first GT7 drive)
   (`CFG_FFB_STRENGTH_PERCENT`). Every packet is clamped, whatever the console sends
   (tested with randomized command streams). Your base's own strength setting still
   applies on top.
@@ -30,7 +30,9 @@ PS5/GT7 ──G29 FFB commands──► adapter ──Simagic FFB packets──�
   base did not get from this translator.
 * **Safety stops:**
   * at boot / wheelbase mount, every effect block is stopped before anything else;
-  * a non-zero force held with no console FFB traffic for 2 s is stopped (dead-man);
+  * there is no traffic timeout: GT7 sends forces only when they change (gaps of more
+    than 2 s while driving were measured), so a held force is kept, as on a G29. Up to
+    0.2.3 a 2 s timeout cut such forces and left FFB dead until GT7 restarted an effect;
   * the force stops when the console unconfigures or suspends the adapter, or the
     wheelbase disappears;
   * a firmware hang triggers the 2 s watchdog, and the reboot stops everything.
@@ -118,4 +120,4 @@ set `CFG_FFB_INVERT 1` (or ask for that build), reflash and repeat.
 
 **T12 – log.** After the session, `tools/pull_log.sh` (or `CURRENT.UF2`, see
 `START_HERE.md`). The `ffb` lines list every kind of command GT7 sent, any untranslated
-effect types, and the longest gap between console commands (to check the 2 s dead-man).
+effect types, and the longest gap between console commands.

@@ -41,7 +41,7 @@ Controller Light for PS4*. Neither has been tested with this rig, this Hori
 | Neutral input before rig reports | all zero (wheel full left, pedals "pressed", dpad up) | wheel 0x8000, pedals/clutch 0xFFFF, dpad 8 (same as bilgon32) | safe neutral |
 | GET input report 1 | stale buffer | current report | defined content |
 | Unknown GET IDs | `reqlen` stale bytes | `reqlen` zero bytes | defined content |
-| Force feedback / wheel init | forwarded as-is to Logitech wheels; Logitech init commands sent | steady forces translated to Simagic packets (simagic-ff protocol) capped at 30 %; everything else dropped; no Logitech command ever reaches the base. `console-noffb` build sends nothing | a Simagic DD base does not speak the Logitech protocol; see docs/GT7_SETUP.md |
+| Force feedback / wheel init | forwarded as-is to Logitech wheels; Logitech init commands sent | steady forces translated to Simagic packets (simagic-ff protocol) capped at 60 %; everything else dropped; no Logitech command ever reaches the base. `console-noffb` build sends nothing | a Simagic DD base does not speak the Logitech protocol; see docs/GT7_SETUP.md |
 | Diagnostics | UART printf on GP16 | flash log (both builds), CDC port (bench build only) | console sessions must be readable after power loss |
 | Firmware image | runs from flash (XIP) | `copy_to_ram` | flash log writes cannot stall USB interrupts |
 | Watchdog | none | 2 s | a hang becomes a logged reboot instead of a dead controller |

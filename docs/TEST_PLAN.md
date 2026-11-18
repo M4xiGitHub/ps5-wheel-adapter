@@ -22,7 +22,7 @@ HID input, Hori detection or a delivered signature are intermediate results.
 | T8 15 min continuous in GT7 | | console 0.1.0 2aa676cb… | log: 2 h 05 min, auth OK every 57 s | 131 rounds, 130 delivered, 0 failures, Hori signs in ~939 ms, all 655 console nonce pages CRC-valid; 12 061 console output reports; ended by console USB suspend |
 | T9 Repeat startups ×3 | | | pending | |
 | T10 FFB bench (format, direction) | 2026-11-18 | bench 0.2.3 | pass (transport, cap, stops); physical side to confirm | output report 1 (20 B) accepted; boot sent 6 stop packets; tests capped to 30 %: ±1000 raw -> ±300 (3 %) moved the wheel ~1-2 deg, ±3000 raw -> ±900 (9 %) moved it −514 / +565 counts (~7-8 deg at 900 deg), hands off. **Positive Simagic magnitude turns the wheel anticlockwise** (owner observed; steering reading falls). GT7 centring (T11) confirms CFG_FFB_INVERT |
-| T11 FFB in GT7, low speed, centring | | | pending | |
+| T11 FFB in GT7, low speed, centring | 2026-11-18 | console 0.2.3 d165d8ed… | partial | owner: FFB present (curb rumble) but very weak at 30 % and "random", none on impacts. Cause found: the 2 s traffic timeout cut held forces and cleared the playing state (GT7 sends only on change; 0.1.0 log shows >2 s gaps while driving). Removed in 0.2.4, cap raised to 60 %. Centring direction still to confirm |
 | T12 FFB log review (command mix, gaps) | | | pending | |
 
 ## T1 – Does this Hori sign? (computer only)

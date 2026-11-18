@@ -55,14 +55,14 @@ static void console(ffb_t* f, uint32_t now, uint8_t b0, uint8_t b1, uint8_t b2, 
 
 static void setup(ffb_t* f, uint8_t pct, bool invert) {
     memset(events, 0, sizeof(events));
-    ffb_init(f, pct, invert, 2000, on_ev, NULL);
+    ffb_init(f, pct, invert, on_ev, NULL);
     CHECK(ffb_set_output_format(f, WB_DESC, sizeof(WB_DESC)));
     ffb_reset(f, FFB_RESET_BOOT);
 }
 
 static void test_output_format(void) {
     ffb_t f;
-    ffb_init(&f, 30, false, 2000, NULL, NULL);
+    ffb_init(&f, 30, false, NULL, NULL);
     CHECK(ffb_set_output_format(&f, WB_DESC, sizeof(WB_DESC)));
     CHECK_EQ(f.out_report_id, 2);
     CHECK_EQ(f.out_len, 63);
@@ -208,7 +208,7 @@ static void test_control_transfer_shape(void) {
     CHECK_EQ(f.rx_bad, 2);
 }
 
-static void test_safety_stops(void) {
+static void test_held_force_and_safety_stops(void) {
     ffb_t f;
     pkts_t p;
     setup(&f, 30, false);
@@ -216,28 +216,27 @@ static void test_safety_stops(void) {
     console(&f, 100, 0x11, 0x08, 0xFF, 0x80, 0, 0);
     drain(&f, 100, &p);
     CHECK(f.running);
-    drain(&f, 100 + 1999, &p);
-    CHECK_EQ(p.n, 0);  // still within the stale window
-    drain(&f, 100 + 2001, &p);  // console went quiet with a force held
-    CHECK_EQ(p.n, 1);
-    CHECK_EQ(p.p[0][2], SM_OP_STOP);
-    CHECK_EQ(events[FFB_EV_STALE], 1);
-    CHECK(!f.running);
-    // A zero force may be held indefinitely (no stale stop).
-    console(&f, 5000, 0x11, 0x08, 0x80, 0x80, 0, 0);
-    drain(&f, 5000, &p);
-    drain(&f, 20000, &p);
+    // GT7 sends only on change: a force is held however long the console is quiet.
+    drain(&f, 100 + 2001, &p);
+    CHECK_EQ(p.n, 0);
+    drain(&f, 100 + 600000, &p);
     CHECK_EQ(p.n, 0);
     CHECK(f.running);
-    // Console unconfigured / suspended: stop.
-    console(&f, 20001, 0x1C, 0x08, 0x10, 0x80, 0, 0);
-    drain(&f, 20001, &p);
+    CHECK_EQ(f.sent_mag, 3000);
+    // A refresh after a long quiet period updates the playing force directly.
+    console(&f, 700000, 0x1C, 0x08, 0x40, 0x80, 0, 0);
+    drain(&f, 700000, &p);
+    CHECK_EQ(p.n, 1);
+    CHECK_EQ(mag_of(p.p[0]), -(127 - 0x40) * 10000 * 30 / 12700);
+    // Console unconfigured / suspended: stop, and nothing restarts by itself.
     ffb_reset(&f, FFB_RESET_CONSOLE_GONE);
-    drain(&f, 20002, &p);
+    drain(&f, 700001, &p);
     CHECK_EQ(p.n, 1);
     CHECK_EQ(p.p[0][2], SM_OP_STOP);
-    drain(&f, 20003, &p);
-    CHECK_EQ(p.n, 0);  // nothing restarts by itself
+    drain(&f, 800000, &p);
+    CHECK_EQ(p.n, 0);
+    CHECK(!f.running);
+    CHECK_EQ(events[FFB_EV_STALE], 0);
 }
 
 static void test_failed_send_is_retried(void) {
@@ -279,7 +278,7 @@ int main(void) {
     RUN(test_multi_slot_sum_and_invert);
     RUN(test_ignored_commands);
     RUN(test_control_transfer_shape);
-    RUN(test_safety_stops);
+    RUN(test_held_force_and_safety_stops);
     RUN(test_failed_send_is_retried);
     RUN(test_bench_test_mode);
     TEST_MAIN_END();
