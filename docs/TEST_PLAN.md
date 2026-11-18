@@ -15,13 +15,13 @@ HID input, Hori detection or a delivered signature are intermediate results.
 | T1 Hori signs | | | pending | |
 | T2 Rig descriptors | 2026-11-18 | bench 0.1.0 e1e4edee… | pass (via adapter) | Simagic 185 B and VRS 80 B descriptors captured; both match the brief's layouts; now test fixtures. Hat is 4-way (logical 0..3) -> fixed in 0.2.1 |
 | T3 Enumeration on both ports | 2026-11-18 | bench 0.1.0 e1e4edee… | pass, with note | macOS host. Hori validated (F0/F1/F2/F3); hub + all 4 rig devices mounted; wheel ~1000 reports/s, pedals ~70/s, no rejects/drops. **Rig is on port A (GP0/GP1), Hori on port B** – swapped vs the plan; works because roles come from VID/PID + descriptors |
-| T4 Live input + mapping | 2026-11-18 | bench 0.2.1 | map recorded, ranges pending | wizard on the GT Neo (second run); 18 = dial Enter by owner's choice, Options unassigned; in config since 0.2.3. `--axes` steering/pedal direction not run yet |
+| T4 Live input + mapping | 2026-11-18 | bench 0.2.1 | map recorded, ranges pending | wizard on the GT Neo (second run); 18 = dial Enter by owner's choice, Options unassigned; in config since 0.2.3. steering: anticlockwise lowers the reading, so 0 = left as on the G29 (CFG_STEER_INVERT 0 confirmed); pedals 0 at rest, rise when pressed (CFG_PEDALS_RISE_WHEN_PRESSED 1 confirmed) |
 | T5 Auth through adapter (PC) | | | pending | |
 | T6 Power checks P1–P4 | | | pending | |
 | T7 PS5 accept + PS/user select + GT7 | | console 0.1.0 2aa676cb… | log evidence, on-screen result to confirm | flash log boot #8: configured by the PS5, PS (source 6) pressed 23x; owner to confirm what the TV showed and GT7 control |
 | T8 15 min continuous in GT7 | | console 0.1.0 2aa676cb… | log: 2 h 05 min, auth OK every 57 s | 131 rounds, 130 delivered, 0 failures, Hori signs in ~939 ms, all 655 console nonce pages CRC-valid; 12 061 console output reports; ended by console USB suspend |
 | T9 Repeat startups ×3 | | | pending | |
-| T10 FFB bench (format, direction) | 2026-11-18 | bench 0.2.3 | pass (transport, cap, stops); physical side to confirm | output report 1 (20 B) accepted; boot sent 6 stop packets; tests capped to 30 %: ±1000 raw -> ±300 (3 %) moved the wheel ~1-2 deg, ±3000 raw -> ±900 (9 %) moved it −514 / +565 counts (~7-8 deg at 900 deg), hands off. **Positive Simagic magnitude lowers the steering reading.** Owner to confirm which way that is; GT7 centring (T11) decides CFG_FFB_INVERT |
+| T10 FFB bench (format, direction) | 2026-11-18 | bench 0.2.3 | pass (transport, cap, stops); physical side to confirm | output report 1 (20 B) accepted; boot sent 6 stop packets; tests capped to 30 %: ±1000 raw -> ±300 (3 %) moved the wheel ~1-2 deg, ±3000 raw -> ±900 (9 %) moved it −514 / +565 counts (~7-8 deg at 900 deg), hands off. **Positive Simagic magnitude turns the wheel anticlockwise** (owner observed; steering reading falls). GT7 centring (T11) confirms CFG_FFB_INVERT |
 | T11 FFB in GT7, low speed, centring | | | pending | |
 | T12 FFB log review (command mix, gaps) | | | pending | |
 

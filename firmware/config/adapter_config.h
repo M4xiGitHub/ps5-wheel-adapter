@@ -44,12 +44,12 @@
 // ------------------------------------------------------------------ axes
 // Steering: Simagic Generic-Desktop X, scaled linearly from its logical range to
 // 0..65535 (0 = full left on the G29). Set to 1 if the measured direction is reversed.
-#define CFG_STEER_INVERT 0  // [measure]
+#define CFG_STEER_INVERT 0  // confirmed 2026-11-18: anticlockwise lowers the reading (0 = left)
 
 // Pedals: VRS Z -> throttle, VRS Y -> brake [spec]. The G29 reports 0xFFFF released
 // and 0 fully pressed. CFG_PEDALS_RISE_WHEN_PRESSED = 1 means the VRS value grows as
 // the pedal is pressed (logical minimum = released).
-#define CFG_PEDALS_RISE_WHEN_PRESSED 1  // [measure]
+#define CFG_PEDALS_RISE_WHEN_PRESSED 1  // confirmed 2026-11-18: 0 released, rises when pressed
 
 // Clutch stays released (0xFFFF) until its source and behaviour are verified.
 #define CFG_CLUTCH_ENABLED 0
@@ -69,6 +69,7 @@
 
 // Direction: set to 1 if, in GT7, the wheel pushes AWAY from centre when driving
 // straight (it must pull back towards centre). See docs/GT7_SETUP.md. [measure]
+// Bench 2026-11-18: a positive Simagic magnitude turns the wheel anticlockwise.
 #define CFG_FFB_INVERT 0
 
 // Dead-man: a non-zero force held with no console FFB traffic for this long is

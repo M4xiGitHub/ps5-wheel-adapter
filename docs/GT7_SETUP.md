@@ -107,6 +107,9 @@ The first must show `ffb wheelbase output report OK`. Each test applies 3 % of t
 base's range for 0.6 s; keep your hands on the wheel. Note which way it turns each time
 (they must be opposite). If nothing moves, try `3000`, then send the output.
 
+Result on your base (2026-11-18): a positive magnitude turns the wheel anticlockwise;
+±9 % moved it about 7-8 degrees hands off.
+
 **T11 – GT7, low speed.** Console firmware. In GT7, start with low force-feedback
 strength. Drive slowly in a straight line, hands on the wheel: steer a little and let
 go of the force. The wheel must **pull back towards centre**.
