@@ -21,7 +21,7 @@ HID input, Hori detection or a delivered signature are intermediate results.
 | T7 PS5 accept + PS/user select + GT7 | | console 0.1.0 2aa676cb… | log evidence, on-screen result to confirm | flash log boot #8: configured by the PS5, PS (source 6) pressed 23x; owner to confirm what the TV showed and GT7 control |
 | T8 15 min continuous in GT7 | | console 0.1.0 2aa676cb… | log: 2 h 05 min, auth OK every 57 s | 131 rounds, 130 delivered, 0 failures, Hori signs in ~939 ms, all 655 console nonce pages CRC-valid; 12 061 console output reports; ended by console USB suspend |
 | T9 Repeat startups ×3 | | | pending | |
-| T10 FFB bench (format, direction) | | | pending | see docs/GT7_SETUP.md |
+| T10 FFB bench (format, direction) | 2026-11-18 | bench 0.2.3 | pass (transport, cap, stops); physical side to confirm | output report 1 (20 B) accepted; boot sent 6 stop packets; tests capped to 30 %: ±1000 raw -> ±300 (3 %) moved the wheel ~1-2 deg, ±3000 raw -> ±900 (9 %) moved it −514 / +565 counts (~7-8 deg at 900 deg), hands off. **Positive Simagic magnitude lowers the steering reading.** Owner to confirm which way that is; GT7 centring (T11) decides CFG_FFB_INVERT |
 | T11 FFB in GT7, low speed, centring | | | pending | |
 | T12 FFB log review (command mix, gaps) | | | pending | |
 
