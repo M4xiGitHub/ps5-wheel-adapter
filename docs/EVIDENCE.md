@@ -56,6 +56,17 @@ USB behaviour, but it is recorded in dist/BUILDINFO.txt for every build.
   interrupt-OUT buffer. The 2023 workaround in the reference (F0 payload overwritten by
   FFB data) addressed a shared-buffer race that this revision no longer has.
 
+## Physical results so far (owner's hardware)
+
+* Bench, macOS host (bench 0.1.0): Hori validated; hub + 4 rig devices enumerated; Simagic
+  and VRS descriptors match the brief; the Simagic hat is 4-way (fixed in 0.2.1).
+* PS5 (console 0.1.0, flash log): a 2 h 05 min session with 131 auth rounds every 57.0 s,
+  130 complete signatures delivered, no failures. The console's F0 pages carry CRC32 over
+  report ID + 59 bytes (all 655 matched). The Hori's F1 pages do not end with that CRC; they
+  are forwarded verbatim and the console continued authenticating, so it accepts them.
+  The console also asked once for feature report 0x31 (63 bytes, not in the G29
+  descriptor; answered with zeros like the reference). What the TV showed is not in the log.
+
 ## What the Hori VID/PID does and does not establish
 
 0F0D:0087 only names a Hori product ID. Whether this unit implements the licensed signing

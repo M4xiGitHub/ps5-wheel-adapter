@@ -337,7 +337,11 @@ void auth_complete(auth_t* a, uint8_t report_id, uint16_t len, uint32_t now_ms) 
             bool crc_ok = page_crc_ok(0xF1, page);
             bool id_ok = page[0] == a->nonce_id;
             bool page_ok = page[1] == a->ds_page;
-            if (!crc_ok || !id_ok || !page_ok || a->ds_page == 0) {
+            // Logged for page 0 (shows the CRC result) and for any id/page mismatch. The Hori
+            // 0F0D:0087 does not end its F1 pages with the console-style CRC32 (seen on 131 PS5
+            // rounds that the console accepted), so a CRC mismatch alone is not logged per page.
+            (void) crc_ok;
+            if (!id_ok || !page_ok || a->ds_page == 0) {
                 emit(a, AUTH_EV_DS_PAGE_CHECK, a->ds_page,
                     (uint32_t) crc_ok | ((uint32_t) id_ok << 1) | ((uint32_t) page_ok << 2) | ((uint32_t) page[1] << 8));
             }

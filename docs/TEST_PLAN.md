@@ -18,8 +18,8 @@ HID input, Hori detection or a delivered signature are intermediate results.
 | T4 Live input + mapping | | | pending | |
 | T5 Auth through adapter (PC) | | | pending | |
 | T6 Power checks P1–P4 | | | pending | |
-| T7 PS5 accept + PS/user select + GT7 | | | pending | |
-| T8 15 min continuous in GT7 | | | pending | |
+| T7 PS5 accept + PS/user select + GT7 | | console 0.1.0 2aa676cb… | log evidence, on-screen result to confirm | flash log boot #8: configured by the PS5, PS (source 6) pressed 23x; owner to confirm what the TV showed and GT7 control |
+| T8 15 min continuous in GT7 | | console 0.1.0 2aa676cb… | log: 2 h 05 min, auth OK every 57 s | 131 rounds, 130 delivered, 0 failures, Hori signs in ~939 ms, all 655 console nonce pages CRC-valid; 12 061 console output reports; ended by console USB suspend |
 | T9 Repeat startups ×3 | | | pending | |
 | T10 FFB bench (format, direction) | | | pending | see docs/GT7_SETUP.md |
 | T11 FFB in GT7, low speed, centring | | | pending | |

@@ -399,7 +399,22 @@ static void test_short_or_corrupt_downstream_replies(void) {
     r.buf[10] ^= 0xFF;
     auth_complete(&a, 0xF1, 64, t);
     CHECK_EQ(a.ds_page, 1);
+    CHECK_EQ(ev_count[AUTH_EV_DS_PAGE_CHECK], 1);  // page 0 is always logged
+    // Later pages: a CRC-only difference is forwarded silently, a wrong page field is logged.
+    t += 10;
+    CHECK(auth_poll(&a, t, &r));
+    auth_submitted(&a, true, t);
+    hori_execute(&h, &r);
+    r.buf[20] ^= 0xFF;
+    auth_complete(&a, 0xF1, 64, t);
     CHECK_EQ(ev_count[AUTH_EV_DS_PAGE_CHECK], 1);
+    t += 10;
+    CHECK(auth_poll(&a, t, &r));
+    auth_submitted(&a, true, t);
+    hori_execute(&h, &r);
+    r.buf[2] = 9;  // page field
+    auth_complete(&a, 0xF1, 64, t);
+    CHECK_EQ(ev_count[AUTH_EV_DS_PAGE_CHECK], 2);
 }
 
 int main(void) {

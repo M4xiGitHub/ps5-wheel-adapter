@@ -167,7 +167,7 @@ def describe(r):
         return "host first %s report 0x%02x type=%s len=%d" % (
             "SET" if d[1] else "GET", a, REPORT_TYPES.get(d[0], d[0]), u16(d, 2))
     if n == "CONSOLE_OUTPUT":
-        return "host first output report (dropped, FFB disabled): id=%d data %s" % (a, d.hex())
+        return "host first output report (FFB/LED data): id=%d data %s" % (a, d.hex())
     if n == "PS_BUTTON":
         return "PS button %s (source button %d)" % ("PRESSED" if a else "released", d[0])
     if n == "SRC_BUTTON":
