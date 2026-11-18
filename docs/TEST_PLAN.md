@@ -12,11 +12,11 @@ HID input, Hori detection or a delivered signature are intermediate results.
 | Test | Date | Firmware (SHA-256 prefix) | Result | Notes |
 | --- | --- | --- | --- | --- |
 | Automated host tests | 2026-11-18 | v0.2.0 console e24fe9f9… | pass (6/6 suites incl. FFB cap) | not hardware evidence |
-| T1 Hori signs | | | pending | |
+| T1 Hori signs | 2026-11-18 | console 0.2.3 (via adapter) | pass | covered by T5: the Hori 0F0D:0087 signs; signature verifies against its embedded 2048-bit key |
 | T2 Rig descriptors | 2026-11-18 | bench 0.1.0 e1e4edee… | pass (via adapter) | Simagic 185 B and VRS 80 B descriptors captured; both match the brief's layouts; now test fixtures. Hat is 4-way (logical 0..3) -> fixed in 0.2.1 |
 | T3 Enumeration on both ports | 2026-11-18 | bench 0.1.0 e1e4edee… | pass, with note | macOS host. Hori validated (F0/F1/F2/F3); hub + all 4 rig devices mounted; wheel ~1000 reports/s, pedals ~70/s, no rejects/drops. **Rig is on port A (GP0/GP1), Hori on port B** – swapped vs the plan; works because roles come from VID/PID + descriptors |
 | T4 Live input + mapping | 2026-11-18 | bench 0.2.1 | map recorded, ranges pending | wizard on the GT Neo (second run); 18 = dial Enter by owner's choice, Options unassigned; in config since 0.2.3. steering: anticlockwise lowers the reading, so 0 = left as on the G29 (CFG_STEER_INVERT 0 confirmed); pedals 0 at rest, rise when pressed (CFG_PEDALS_RISE_WHEN_PRESSED 1 confirmed) |
-| T5 Auth through adapter (PC) | | | pending | |
+| T5 Auth through adapter (PC) | 2026-11-18 | console 0.2.3 d165d8ed… | pass | macOS: F3 answered locally, nonce forwarded, Hori ready after ~1.1 s, 19 pages returned; nonce signature VALID (RSA-PSS/SHA-256, salt 32, 2048-bit, e=65537). Hori F1 pages lack the console-style CRC32, as on the PS5 |
 | T6 Power checks P1–P4 | | | pending | |
 | T7 PS5 accept + PS/user select + GT7 | | console 0.1.0 2aa676cb… | log evidence, on-screen result to confirm | flash log boot #8: configured by the PS5, PS (source 6) pressed 23x; owner to confirm what the TV showed and GT7 control |
 | T8 15 min continuous in GT7 | | console 0.1.0 2aa676cb… | log: 2 h 05 min, auth OK every 57 s | 131 rounds, 130 delivered, 0 failures, Hori signs in ~939 ms, all 655 console nonce pages CRC-valid; 12 061 console output reports; ended by console USB suspend |
