@@ -18,6 +18,11 @@ Pico-PIO-USB requires D- = D+ + 1 (`PIO_USB_PINOUT_DPDM`); both ports satisfy th
 The firmware registers port A as root port 0 (TinyUSB rhport 1) and port B as root
 port 1 (rhport 2); the logs name them "A (GP0/GP1)" and "B (GP2/GP3)".
 
+Observed on 2026-11-18: the rig's hub enumerated on port A (rhport 1, GP0/GP1) and the
+Hori on port B, i.e. swapped relative to the table. The firmware does not depend on which
+port a device uses (it identifies devices by VID/PID and descriptor), so no change is
+needed; the logs flag it as "topology=UNEXPECTED" only for information.
+
 The 22 Ω resistors on port B only are not treated as a problem: there is no measurement
 indicating one. They are listed so a port-specific error rate (if ever logged) can be
 related to them.

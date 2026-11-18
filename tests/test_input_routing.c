@@ -1,5 +1,7 @@
 // Input mapping (Simagic/VRS -> G29) and downstream device routing decisions.
 #include "devices.h"
+#include "captured_descriptors.h"
+#include "ffb.h"
 #include "fixtures.h"
 #include "input_map.h"
 #include "test_util.h"
@@ -190,6 +192,30 @@ static void test_pedals(void) {
     CHECK_EQ(g29_get_u16(&r, G29_OFS_THROTTLE), 0xFFFF);
 }
 
+static void test_four_way_hat_of_real_wheel(void) {
+    // Hat as captured from the Simagic 0483:0522 descriptor: 4 bits, logical 0..3,
+    // physical 0..270 degrees; 4 is reported at rest.
+    static const uint8_t desc[] = {
+        0x05, 0x01, 0x09, 0x04, 0xA1, 0x01, 0x85, 0x01,
+        0x15, 0x00, 0x27, 0xFF, 0xFF, 0x00, 0x00, 0x75, 0x10, 0x95, 0x01, 0x09, 0x30, 0x81, 0x02,
+        0x15, 0x00, 0x25, 0x03, 0x35, 0x00, 0x46, 0x0E, 0x01, 0x65, 0x14, 0x75, 0x04, 0x95, 0x01, 0x09, 0x39,
+        0x81, 0x02, 0x75, 0x04, 0x95, 0x01, 0x81, 0x03, 0xC0,
+    };
+    input_state_t s;
+    memset(&s, 0, sizeof(s));
+    uint8_t mm;
+    CHECK(wheel_layout_from_desc(desc, sizeof(desc), &s.wheel_layout, &mm) != LAYOUT_UNUSABLE);
+    s.wheel_layout_ok = true;
+    const uint8_t expect[5] = { 0, 2, 4, 6, G29_DPAD_NEUTRAL };
+    for (uint8_t v = 0; v <= 4; v++) {
+        uint8_t p[4] = { 1, 0x00, 0x80, v };
+        CHECK(input_wheel_report(&s, p, 4));
+        g29_report_t r;
+        input_build_report(&s, &CFG, &r);
+        CHECK_EQ(g29_get_dpad(&r), expect[v]);
+    }
+}
+
 static void test_reject_and_loss(void) {
     input_state_t s;
     setup(&s);
@@ -322,14 +348,41 @@ static void test_min_hold_for_encoder_pulses(void) {
     CHECK(!g29_get_button(&r, G29_BTN_R1));
 }
 
+static void test_captured_real_descriptors(void) {
+    wheel_layout_t wl;
+    pedal_layout_t pl;
+    uint8_t mm;
+    // The brief's Simagic layout is confirmed by the device's own descriptor.
+    CHECK_EQ(wheel_layout_from_desc(CAPTURED_SIMAGIC_0522, sizeof(CAPTURED_SIMAGIC_0522), &wl, &mm), LAYOUT_MATCHES_DOC);
+    CHECK_EQ(mm, 0);
+    CHECK_EQ(wl.steer.logical_max, 65535);
+    CHECK_EQ(wl.hat.logical_max, 3);
+    CHECK_EQ(wl.button_count, 116);
+    CHECK_EQ(pedal_layout_from_desc(CAPTURED_VRS_A3BE, sizeof(CAPTURED_VRS_A3BE), &pl, &mm), LAYOUT_MATCHES_DOC);
+    CHECK_EQ(mm, 0);
+    hid_decision_t d = devices_decide_hid(0x0483, 0x0522, CAPTURED_SIMAGIC_0522, sizeof(CAPTURED_SIMAGIC_0522), &wl, &pl);
+    CHECK_EQ(d.role, ROLE_WHEEL);
+    d = devices_decide_hid(0x0483, 0xA3BE, CAPTURED_VRS_A3BE, sizeof(CAPTURED_VRS_A3BE), &wl, &pl);
+    CHECK_EQ(d.role, ROLE_PEDALS);
+    // FFB uses the first output report, as simagic-ff does: ID 1, 20 bytes.
+    ffb_t f;
+    ffb_init(&f, 30, false, 2000, NULL, NULL);
+    CHECK(ffb_set_output_format(&f, CAPTURED_SIMAGIC_0522, sizeof(CAPTURED_SIMAGIC_0522)));
+    CHECK_EQ(f.out_report_id, 1);
+    CHECK_EQ(f.out_len, 20);
+    CHECK(!ffb_set_output_format(&f, CAPTURED_VRS_A3BE, sizeof(CAPTURED_VRS_A3BE)));
+}
+
 int main(void) {
     RUN(test_scale);
+    RUN(test_captured_real_descriptors);
     RUN(test_min_hold_for_encoder_pulses);
     RUN(test_neutral_without_sources);
     RUN(test_steering_full_resolution);
     RUN(test_hat_and_dpad_buttons);
     RUN(test_ps_button_independent);
     RUN(test_pedals);
+    RUN(test_four_way_hat_of_real_wheel);
     RUN(test_reject_and_loss);
     RUN(test_layout_validation);
     RUN(test_routing_by_vid_pid_and_descriptor);

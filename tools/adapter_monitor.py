@@ -112,11 +112,18 @@ def explain_no_port():
     print("\nIf you know the port, pass it: --port COM5")
 
 
+STATUS_FMT_V01 = "<IBBBB5i16s3sB4H6I"  # firmware 0.1.x: no FFB fields
+STATUS_SIZE_V01 = struct.calcsize(STATUS_FMT_V01)
+
+
 def parse_status(hexstr):
     raw = bytes.fromhex(hexstr)
-    if len(raw) != STATUS_SIZE:
-        return None
-    return dict(zip(STATUS_FIELDS, struct.unpack(STATUS_FMT, raw)))
+    if len(raw) == STATUS_SIZE:
+        return dict(zip(STATUS_FIELDS, struct.unpack(STATUS_FMT, raw)))
+    if len(raw) == STATUS_SIZE_V01:
+        st = dict(zip(STATUS_FIELDS, struct.unpack(STATUS_FMT_V01, raw) + (0, 0, 0, 0)))
+        return st
+    return None
 
 
 def pressed_source_buttons(st):

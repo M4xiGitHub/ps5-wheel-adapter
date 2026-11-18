@@ -13,8 +13,8 @@ HID input, Hori detection or a delivered signature are intermediate results.
 | --- | --- | --- | --- | --- |
 | Automated host tests | 2026-11-18 | v0.2.0 console e24fe9f9… | pass (6/6 suites incl. FFB cap) | not hardware evidence |
 | T1 Hori signs | | | pending | |
-| T2 Rig descriptors | | | pending | |
-| T3 Enumeration on both ports | | | pending | |
+| T2 Rig descriptors | 2026-11-18 | bench 0.1.0 e1e4edee… | pass (via adapter) | Simagic 185 B and VRS 80 B descriptors captured; both match the brief's layouts; now test fixtures. Hat is 4-way (logical 0..3) -> fixed in 0.2.1 |
+| T3 Enumeration on both ports | 2026-11-18 | bench 0.1.0 e1e4edee… | pass, with note | macOS host. Hori validated (F0/F1/F2/F3); hub + all 4 rig devices mounted; wheel ~1000 reports/s, pedals ~70/s, no rejects/drops. **Rig is on port A (GP0/GP1), Hori on port B** – swapped vs the plan; works because roles come from VID/PID + descriptors |
 | T4 Live input + mapping | | | pending | |
 | T5 Auth through adapter (PC) | | | pending | |
 | T6 Power checks P1–P4 | | | pending | |

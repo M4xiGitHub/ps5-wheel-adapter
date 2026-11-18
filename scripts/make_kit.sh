@@ -23,7 +23,7 @@ grep -E '^(hidapi|pyserial|cryptography)==' "$ROOT/requirements.txt" > "$STAGE/r
 sed "s/VERSION/$VER/g" "$ROOT/scripts/kit_START_HERE.md" > "$STAGE/START_HERE.md"
 cp "$ROOT/THIRD_PARTY_NOTICES.md" "$STAGE/"
 
-rm -f "$ROOT/dist/$NAME.zip"
+rm -f "$ROOT"/dist/ps5-adapter-kit-*.zip
 (cd "$ROOT/build/kit" && zip -qr -X "$ROOT/dist/$NAME.zip" "$NAME")
 (cd "$ROOT/dist" && grep -v ' ps5-adapter-kit-' SHA256SUMS > SHA256SUMS.tmp; shasum -a 256 "$NAME.zip" >> SHA256SUMS.tmp; mv SHA256SUMS.tmp SHA256SUMS)
 echo "dist/$NAME.zip"

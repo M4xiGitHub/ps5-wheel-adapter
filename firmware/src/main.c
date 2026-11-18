@@ -37,7 +37,7 @@
 
 #define FW_VERSION_MAJOR 0
 #define FW_VERSION_MINOR 2
-#define FW_VERSION_PATCH 0
+#define FW_VERSION_PATCH 1
 #define FW_VERSION ((FW_VERSION_MAJOR << 16) | (FW_VERSION_MINOR << 8) | FW_VERSION_PATCH)
 
 #define PORT_B_DP_PIN 2
@@ -735,8 +735,10 @@ static void bench_task(uint32_t t) {
         }
     }
 
+    // Records stay in the RAM ring until a terminal has the port open (DTR set);
+    // TinyUSB's CDC FIFO overwrites itself while nobody is reading.
     diag_rec_t r;
-    while (tud_cdc_write_available() >= 2 + 32 + 1 && diag_live_peek(&g_diag, &r)) {
+    while (tud_cdc_connected() && tud_cdc_write_available() >= 2 + 32 + 1 && diag_live_peek(&g_diag, &r)) {
         uint32_t n = hex_line(line, 'L', (const uint8_t*) &r, sizeof(r));
         tud_cdc_write(line, n);
         diag_live_consume(&g_diag);

@@ -103,10 +103,14 @@ bool input_raw_clutch(const input_state_t* s, int32_t* v) {
 
 static uint8_t hat_to_dpad(const hid_field_t* f, int32_t v) {
     int32_t d = v - f->logical_min;
-    if (f->logical_max - f->logical_min >= 7 && d >= 0 && d <= 7) {
-        return (uint8_t) d;  // 0 = north, clockwise
+    int32_t positions = f->logical_max - f->logical_min + 1;
+    if (positions == 8 && d >= 0 && d <= 7) {
+        return (uint8_t) d;  // 8-way: 0 = north, clockwise in 45 degree steps
     }
-    return G29_DPAD_NEUTRAL;  // null state
+    if (positions == 4 && d >= 0 && d <= 3) {
+        return (uint8_t) (d * 2);  // 4-way (Simagic 0483:0522: logical 0..3, 0..270 deg): N E S W
+    }
+    return G29_DPAD_NEUTRAL;  // null state (outside the logical range)
 }
 
 static uint8_t buttons_to_dpad(bool up, bool right, bool down, bool left) {
