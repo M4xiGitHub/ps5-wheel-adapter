@@ -1,0 +1,7 @@
+# Pinned source dependencies. Format: name  url  commit  (tag/notes)
+# Chosen to match jfedor2/wheel-adapter release r2026-11-07 (two PIO-USB host
+# ports on GP0/GP1 + GP2/GP3, the same pinout as this adapter). See docs/EVIDENCE.md.
+pico-sdk      https://github.com/raspberrypi/pico-sdk.git     079c6f39023649b154152db30f1d781e884879bc  tag 2.3.1
+tinyusb       https://github.com/jfedor2/tinyusb.git          c7d880ed3e4d8f31ea20c27a6d02903eeb4ffaea  branch hid-remapper (upstream master 2026-10-20 + 6 patches)
+Pico-PIO-USB  https://github.com/jfedor2/Pico-PIO-USB.git     fc893627d12892cfd22460856edceac8d5227d7e  branch hid-remapper (upstream 0.7.3 + 9 patches)
+picotool      https://github.com/raspberrypi/picotool.git     2041936441b48a3cc53ae3da9e805229fe8f4e18  tag 2.3.1 (host tool: UF2 conversion, BOOTSEL log readout)

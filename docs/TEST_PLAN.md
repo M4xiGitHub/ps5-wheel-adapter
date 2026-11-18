@@ -1,0 +1,100 @@
+# Physical test plan and results
+
+Run in order; each stage isolates one link of the chain. Commands run from the project
+folder. "You" = steps that need hands on the hardware; the rest can be run by the
+assistant when the device is plugged into the development computer.
+
+Milestone 1 is met only when **T7, T8 and T9 pass on the real PS5**. A green build, Mac
+HID input, Hori detection or a delivered signature are intermediate results.
+
+## Results log
+
+| Test | Date | Firmware (SHA-256 prefix) | Result | Notes |
+| --- | --- | --- | --- | --- |
+| Automated host tests | 2026-11-18 | console 2aa676cb… | pass (5/5 suites) | not hardware evidence |
+| T1 Hori signs | | | pending | |
+| T2 Rig descriptors | | | pending | |
+| T3 Enumeration on both ports | | | pending | |
+| T4 Live input + mapping | | | pending | |
+| T5 Auth through adapter (PC) | | | pending | |
+| T6 Power checks P1–P4 | | | pending | |
+| T7 PS5 accept + PS/user select + GT7 | | | pending | |
+| T8 15 min continuous in GT7 | | | pending | |
+| T9 Repeat startups ×3 | | | pending | |
+
+## T1 – Does this Hori sign? (computer only)
+You: plug the Hori straight into the computer.
+```bash
+.venv/bin/python tools/hid_probe.py
+.venv/bin/python tools/auth_probe.py --target hori
+```
+Pass: `nonce signature: VALID`. Record the product string, F2 latency and serial.
+Fail modes: `not found` (permission / mode), no F0 report in the descriptor (wrong mode
+or a model without the auth chip), signature NOT VALID.
+
+## T2 – Rig descriptors and raw layout (computer only, optional but quick)
+You: plug the rig's USB cable straight into the computer, wheelbase powered.
+```bash
+.venv/bin/python tools/hid_probe.py --dump logs/rig-descriptors
+.venv/bin/python tools/hid_probe.py --watch 0483:0522     # press button 6, then 13, turn the wheel
+.venv/bin/python tools/hid_probe.py --watch 0483:A3BE     # press throttle, brake, clutch
+```
+Pass: Simagic button 6 toggles packet bit 105, button 13 bit 112; steering changes bytes
+1–2; VRS throttle changes bytes 5–6 (Z), brake bytes 3–4 (Y).
+
+## T3 – Adapter enumeration from boot (bench build, computer)
+You: flash `dist/ps5-adapter-bench-<ver>.uf2` (hold BOOTSEL, plug in, copy to RPI-RP2).
+Connect the Hori to port A and the rig to port B **before** plugging the adapter into the
+computer.
+```bash
+.venv/bin/python tools/adapter_monitor.py --seconds 20
+```
+Pass: port A and B ATTACH; six `DEV_MOUNT` lines with `topology=OK` (Hori on A, hub on B,
+four devices behind it); `AUTH_DESC … VALID`; wheel and pedal `LAYOUT` usable (record
+"matches"/"DIFFERS" and the fields); `FIRST_INPUT` for wheel and pedals; no `ERROR`.
+
+## T4 – Live inputs, directions and button mapping (bench build)
+```bash
+.venv/bin/python tools/adapter_monitor.py --axes --seconds 20   # wheel lock to lock, each pedal fully
+.venv/bin/python tools/adapter_monitor.py --wizard              # press the button for each G29 control
+```
+Set `CFG_STEER_INVERT`, `CFG_PEDALS_RISE_WHEN_PRESSED` and `CFG_BUTTON_MAP` in
+`firmware/config/adapter_config.h` from the results, run `scripts/build.sh`, reflash bench.
+Pass: in the monitor's status line, G29 wheel goes 0 (full left) → 65535 (full right),
+throttle/brake go 65535 (released) → 0 (pressed), source button 6 shows `PS`, 13 shows
+`R1`, and every mapped button shows its G29 name. No smoothing or deadzone is applied.
+
+## T5 – Auth path through the adapter (bench or console build, computer)
+Same connections as T3.
+```bash
+.venv/bin/python tools/auth_probe.py --target adapter
+```
+Pass: `VALID`, F1 pages without CRC problems. This exercises console-side reports,
+forwarding to the Hori and the reply path, without the PS5.
+
+## T6 – Power checks
+See docs/HARDWARE.md, P1–P4. Do P3 before the first console test.
+
+## T7 – PS5 acceptance, PS/user selection, GT7 controls (console build)
+You:
+1. Flash `dist/ps5-adapter-console-<ver>.uf2`.
+2. Hori on port A, rig on port B, wheelbase powered, then plug the adapter into the PS5
+   (PS5 already on, at the home screen).
+3. Watch the LED: fast blink → slow blink → solid within ~10 s.
+4. Press the wheel button you mapped to PS (source button 6). Note what the TV shows.
+5. Select your user with the D-pad / Cross mapping.
+6. Start GT7, open Options → Controller settings → Steering controller: check steering,
+   throttle, brake and the mapped buttons. Drive one lap.
+7. Unplug, run `tools/pull_log.sh`.
+Pass: user selection works, GT7 drives, and the log shows `CONFIGURED`, a `CONSOLE_F3`,
+`DS_READY`, `DELIVERED`, `PS_BUTTON PRESSED`, no `DS_FAILED`.
+
+## T8 – 15 minutes of continuous driving
+Keep driving in GT7 for at least 15 minutes (past the 8-minute timeout of
+unauthenticated controllers). Pass: no disconnect/"controller not supported" message;
+log covers ≥ 900 s with heartbeats, no `DS_FAILED`, `delivered` ≥ 1.
+
+## T9 – Repeat startup
+Three times each: (a) PS5 fully off → power on with everything connected; (b) unplug and
+replug the adapter at the home screen. Pass: T7 steps 3–6 succeed every time; each boot
+appears in the log with `DELIVERED`.

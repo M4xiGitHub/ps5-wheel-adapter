@@ -1,0 +1,7 @@
+/.tools/
+/.venv/
+/deps/
+/build/
+/logs/
+__pycache__/
+.DS_Store

@@ -1,0 +1,7 @@
+# Host-side build and diagnostic tools, installed into .venv by scripts/setup.sh.
+# Exact pins so a clean machine gets the same tools.
+cmake==3.31.10
+ninja==1.11.1.4
+hidapi==0.15.0
+pyserial==3.5
+cryptography==46.0.7
