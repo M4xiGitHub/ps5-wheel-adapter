@@ -49,6 +49,7 @@ typedef enum {
     DREC_LOG_FULL,         // flash slot full; last record of a slot
     DREC_FFB,              // a: ffb_event_t (100 = bench test), d0 arg, d1-4 value
     DREC_HEARTBEAT4,       // a: bit0 running bit1 format ok bit2 control mode, d0-1 console cmds, d2-3 packets sent, d4-5 unsupported, d6-7 max gap ms
+    DREC_HEARTBEAT5,       // window: d0 max |console level| (0..127), d1 avg |level|, d2-3 max |sent magnitude|, d4-5 starts, d6-7 tx failed
 } diag_type_t;
 
 // Heartbeat flag bits.

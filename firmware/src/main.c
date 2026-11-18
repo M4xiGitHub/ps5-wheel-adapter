@@ -37,7 +37,7 @@
 
 #define FW_VERSION_MAJOR 0
 #define FW_VERSION_MINOR 2
-#define FW_VERSION_PATCH 4
+#define FW_VERSION_PATCH 5
 #define FW_VERSION ((FW_VERSION_MAJOR << 16) | (FW_VERSION_MINOR << 8) | FW_VERSION_PATCH)
 
 #define PORT_B_DP_PIN 2
@@ -650,6 +650,10 @@ static void heartbeat_task(uint32_t t) {
 #if CFG_FFB_ENABLED
     log_u16x4(DREC_HEARTBEAT4, (uint8_t) (g_ffb.running | (g_ffb.out_ok << 1) | (g_ffb_use_control << 2)), g_ffb.rx_cmds,
         g_ffb.tx_packets, g_ffb.unsupported, g_ffb.max_gap_ms, false);
+    uint8_t lmax, lavg;
+    uint16_t mmax;
+    ffb_take_window(&g_ffb, &lmax, &lavg, &mmax);
+    log_u16x4(DREC_HEARTBEAT5, 0, (uint32_t) lmax | ((uint32_t) lavg << 8), mmax, g_ffb.starts, g_ffb.tx_failed, false);
 #endif
 }
 

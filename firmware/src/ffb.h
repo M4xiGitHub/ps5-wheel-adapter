@@ -19,6 +19,11 @@
 // shows GT7 uses them. Every magnitude is scaled by strength_percent (the cap) and
 // clamped, so no console command can exceed it.
 //
+// When the console stops its force (GT7 stops and restarts slot 1 around zero, at
+// times every 16-200 ms), the effect keeps running at zero magnitude instead of being
+// stopped and restarted on the wheelbase; real stops go out only on reset (boot,
+// console unconfigure/suspend, wheelbase loss).
+//
 // Like a real Logitech wheel, a force is held until the console changes or stops
 // it: GT7 sends commands only on change (measured gaps > 2 s while driving), so
 // there is no traffic-based timeout.
@@ -102,6 +107,11 @@ typedef struct {
     // statistics
     uint32_t rx_cmds, rx_bad, ext_cmds, unsupported, tx_packets, tx_failed;
     uint32_t max_gap_ms;
+    uint8_t win_max_level;   // per heartbeat window: max |console force| (0..127)
+    uint32_t win_sum_level;  // sum of |console force| over the window's commands
+    uint16_t win_cmds;
+    uint16_t win_max_mag;    // max |magnitude| sent in the window
+    uint32_t starts;         // START packets sent
     uint16_t seen_pairs[16];  // bit per force type, per operation, for first-seen logging
     uint16_t unsupported_by_type[16];
 } ffb_t;
@@ -125,6 +135,9 @@ void ffb_test(ffb_t* f, int16_t mag, uint32_t duration_ms, uint32_t now_ms);
 int16_t ffb_console_force(const ffb_t* f);
 // Magnitude to send now (-10000..10000, capped), 0 if nothing should play.
 int16_t ffb_target_mag(const ffb_t* f, uint32_t now_ms);
+
+// Reads and clears the per-window force statistics (for the heartbeat log).
+void ffb_take_window(ffb_t* f, uint8_t* max_level, uint8_t* avg_level, uint16_t* max_mag);
 
 // Builds the next wheelbase packet (value bytes, report ID excluded, zero-padded to
 // out_len). Returns 0 when nothing needs sending. Call ffb_packet_done() after.

@@ -33,7 +33,7 @@ REC_TYPES = {
     7: "HID_DESC_CHUNK", 8: "LAYOUT", 9: "LAYOUT_FIELD", 10: "AUTH_DESC", 11: "AUTH", 12: "FIRST_INPUT",
     13: "INPUT_REJECT", 14: "USB_DEV", 15: "CONSOLE_REQ", 16: "CONSOLE_OUTPUT", 17: "PS_BUTTON",
     18: "SRC_BUTTON", 19: "HEARTBEAT", 20: "HEARTBEAT2", 21: "HEARTBEAT3", 22: "ERROR", 23: "LOG_FULL",
-    24: "FFB", 25: "HEARTBEAT4",
+    24: "FFB", 25: "HEARTBEAT4", 26: "HEARTBEAT5",
 }
 FFB_EVENTS = {1: "FORMAT", 2: "FIRST_CMD", 3: "UNSUPPORTED", 4: "EXTENDED", 5: "ACTIVE", 6: "RESET", 7: "STALE",
               8: "OUT_MODE", 100: "BENCH_TEST"}
@@ -213,6 +213,9 @@ def describe(r):
             m = u16(d, 0)
             return "ffb bench test raw magnitude %d" % (m - 0x10000 if m & 0x8000 else m)
         return "ffb %s arg=%d value=%d" % (ev, arg, val)
+    if n == "HEARTBEAT5":
+        return "heartbeat ffb window: console level max %d avg %d (of 127), sent magnitude max %d/10000, starts=%d tx_failed=%d" % (
+            d[0], d[1], u16(d, 2), u16(d, 4), u16(d, 6))
     if n == "HEARTBEAT4":
         return "heartbeat ffb %s%s%s console_cmds=%d packets=%d unsupported=%d max_gap=%dms" % (
             "running" if a & 1 else "idle", "" if a & 2 else " NO-FORMAT", " control-mode" if a & 4 else "",

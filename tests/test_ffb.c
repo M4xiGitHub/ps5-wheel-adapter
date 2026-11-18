@@ -117,17 +117,36 @@ static void test_constant_force_sequence_and_cap(void) {
     console(&f, 40, 0x1C, 0x08, 0x80, 0x80, 0, 0);  // 128 = no force, unchanged -> nothing sent
     drain(&f, 40, &p);
     CHECK_EQ(p.n, 0);
-    console(&f, 50, 0x13, 0, 0, 0, 0, 0);  // stop slot 1
-    drain(&f, 50, &p);
+    console(&f, 45, 0x1C, 0x08, 0xA0, 0x80, 0, 0);  // some force again
+    drain(&f, 45, &p);
     CHECK_EQ(p.n, 1);
-    CHECK_EQ(p.p[0][0], SM_EFFECT_OP);
-    CHECK_EQ(p.p[0][2], SM_OP_STOP);
-    // Play again: magnitude re-sent only if it changed, then start.
+    console(&f, 50, 0x13, 0, 0, 0, 0, 0);  // console stops slot 1
+    drain(&f, 50, &p);
+    CHECK_EQ(p.n, 1);  // zero magnitude, no stop/restart churn on the wheelbase
+    CHECK_EQ(p.p[0][0], SM_SET_CONSTANT);
+    CHECK_EQ(mag_of(p.p[0]), 0);
+    CHECK(f.running);
+    // Play again: only the magnitude changes.
     console(&f, 60, 0x11, 0x00, 0xC0, 0x80, 0x80, 0x80);  // constant type, slot F1 level 0xC0 (+64)
     drain(&f, 60, &p);
-    CHECK_EQ(p.n, 2);
+    CHECK_EQ(p.n, 1);
     CHECK_EQ(mag_of(p.p[0]), 64 * 10000 * 30 / 12700);
-    CHECK_EQ(p.p[1][2], SM_OP_START);
+    // GT7-style rapid stop/play around zero: one packet each, never a stop.
+    for (int i = 0; i < 10; i++) {
+        console(&f, 70 + i * 20, (i & 1) ? 0x13 : 0x11, 0x08, (i & 2) ? 0x78 : 0x88, 0x80, 0, 0);
+        drain(&f, 70 + i * 20, &p);
+        for (int k = 0; k < p.n; k++) {
+            CHECK(p.p[k][0] == SM_SET_CONSTANT);
+        }
+    }
+    CHECK(f.running);
+    uint8_t lmax, lavg;
+    uint16_t mmax;
+    ffb_take_window(&f, &lmax, &lavg, &mmax);
+    CHECK_EQ(lmax, 127);
+    CHECK_EQ(mmax, 3000);
+    ffb_take_window(&f, &lmax, &lavg, &mmax);
+    CHECK_EQ(lmax, 0);
 }
 
 static void test_cap_never_exceeded(void) {
@@ -265,7 +284,12 @@ static void test_bench_test_mode(void) {
     CHECK_EQ(mag_of(p.p[1]), 300);  // capped: 30 % of 1000
     drain(&f, 509, &p);
     CHECK_EQ(p.n, 0);
-    drain(&f, 511, &p);
+    drain(&f, 511, &p);  // test over: zero force, effect kept running
+    CHECK_EQ(p.n, 1);
+    CHECK_EQ(p.p[0][0], SM_SET_CONSTANT);
+    CHECK_EQ(mag_of(p.p[0]), 0);
+    ffb_reset(&f, FFB_RESET_CONSOLE_GONE);  // a reset sends the real stop
+    drain(&f, 512, &p);
     CHECK_EQ(p.n, 1);
     CHECK_EQ(p.p[0][2], SM_OP_STOP);
 }

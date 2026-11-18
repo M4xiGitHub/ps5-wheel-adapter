@@ -165,6 +165,23 @@ void ffb_console_output(ffb_t* f, uint8_t report_id, const uint8_t* buf, uint16_
             }
             break;
     }
+    int16_t force = ffb_console_force(f);
+    uint8_t lvl = (uint8_t) (force < 0 ? -force : force);
+    if (lvl > f->win_max_level) {
+        f->win_max_level = lvl;
+    }
+    f->win_sum_level += lvl;
+    f->win_cmds++;
+}
+
+void ffb_take_window(ffb_t* f, uint8_t* max_level, uint8_t* avg_level, uint16_t* max_mag) {
+    *max_level = f->win_max_level;
+    *avg_level = (uint8_t) (f->win_cmds ? f->win_sum_level / f->win_cmds : 0);
+    *max_mag = f->win_max_mag;
+    f->win_max_level = 0;
+    f->win_sum_level = 0;
+    f->win_cmds = 0;
+    f->win_max_mag = 0;
 }
 
 int16_t ffb_console_force(const ffb_t* f) {
@@ -257,7 +274,9 @@ uint8_t ffb_next_packet(ffb_t* f, uint32_t now_ms, uint8_t* out) {
         }
     }
 
-    bool want_run = f->test_active || console_wants_run(f);
+    // Once running, the effect stays running (at zero magnitude when nothing plays);
+    // only resets send real stops.
+    bool want_run = f->test_active || console_wants_run(f) || f->running;
     if (want_run) {
         int16_t mag = ffb_target_mag(f, now_ms);
         if (!f->uploaded) {
@@ -322,8 +341,12 @@ void ffb_packet_done(ffb_t* f, bool ok) {
         case KIND_CONST:
             f->sent_mag = f->pending_mag;
             f->mag_valid = true;
+            if ((uint16_t) (f->sent_mag < 0 ? -f->sent_mag : f->sent_mag) > f->win_max_mag) {
+                f->win_max_mag = (uint16_t) (f->sent_mag < 0 ? -f->sent_mag : f->sent_mag);
+            }
             break;
         case KIND_START:
+            f->starts++;
             f->running = true;
             emit(f, FFB_EV_ACTIVE, 1, (uint16_t) f->sent_mag);
             break;
