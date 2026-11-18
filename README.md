@@ -36,7 +36,7 @@ There are two ways in. Most people only need the first.
 ### A. Flash and test – any OS, no build tools
 
 Everything needed on the computer next to the hardware is in one zip:
-[`dist/ps5-adapter-kit-0.2.2.zip`](dist/ps5-adapter-kit-0.2.2.zip) (firmware, diagnostic
+[`dist/ps5-adapter-kit-0.2.3.zip`](dist/ps5-adapter-kit-0.2.3.zip) (firmware, diagnostic
 tools, test docs). Download it, unzip, and follow its `START_HERE.md`. In short:
 
 1. Install Python 3 (Windows: tick "Add python.exe to PATH").

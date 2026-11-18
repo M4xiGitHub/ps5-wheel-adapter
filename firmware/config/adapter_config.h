@@ -17,9 +17,29 @@
 // Only the [spec] entries are known. Run `tools/adapter_monitor.py --wizard` with the
 // bench build: it asks for each GT7 function in turn, suggests a GT Neo control for
 // it, and prints a replacement block. See docs/GT7_SETUP.md.
-#define CFG_BUTTON_MAP                 \
-    { 6, G29_BTN_PS, 0 },  /* [spec] */   \
-    { 13, G29_BTN_R1, 0 }, /* [spec] shift up */
+#define CFG_BUTTON_MAP                                                              \
+    /* Second wizard run on the owner's GT Neo, 2026-11-18 (measured press in ms). */  \
+    { 6, G29_BTN_PS, 0 },          /* [spec] 140 */                                   \
+    { 10, G29_BTN_CROSS, 50 },     /* 36: short tap measured, held 50 ms */           \
+    { 9, G29_BTN_CIRCLE, 0 },      /* 160 */                                          \
+    { 13, G29_BTN_R1, 0 },         /* [spec] right shift paddle, 156 */               \
+    { 14, G29_BTN_L1, 0 },         /* left shift paddle, 120 */                       \
+    { 7, G29_BTN_TRIANGLE, 0 },    /* 172 */                                          \
+    { 4, G29_BTN_SQUARE, 0 },      /* 144 */                                          \
+    { 18, G29_BTN_ENTER, 0 },      /* 212, owner's choice (also offered for Options) */ \
+    { 12, G29_BTN_DIAL_UP, 0 },    /* 176 */                                          \
+    { 11, G29_BTN_DIAL_DOWN, 0 },  /* 176 */                                          \
+    { 33, G29_BTN_PLUS, 0 },       /* 176 */                                          \
+    { 34, G29_BTN_MINUS, 0 },      /* 176 */                                          \
+    { 17, G29_BTN_L2, 0 },         /* 176 */                                          \
+    { 23, G29_BTN_R2, 0 },         /* 176 */                                          \
+    { 38, G29_BTN_L3, 0 },         /* 176 */                                          \
+    { 37, G29_BTN_R3, 0 },         /* 176 */                                          \
+    { 29, G29_BTN_DPAD_UP, 0 },    /* 36 (holds are not applied to D-pad targets) */   \
+    { 30, G29_BTN_DPAD_RIGHT, 0 }, /* 140 */                                          \
+    { 28, G29_BTN_DPAD_DOWN, 0 },  /* 140 */                                          \
+    { 25, G29_BTN_DPAD_LEFT, 0 },  /* 108 */                                          \
+    /* Options (pause): unassigned - name a free button to add it. */
 
 // ------------------------------------------------------------------ axes
 // Steering: Simagic Generic-Desktop X, scaled linearly from its logical range to

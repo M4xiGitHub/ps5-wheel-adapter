@@ -76,6 +76,20 @@ console cannot miss a detent). Paste the printed block into
 | D-pad | the 7-way switch that reports as the hat (automatic) | MFD navigation, menus |
 | PS | source button 6 (given) | PS button |
 
+### Your recorded map (wizard, 2026-11-18, firmware 0.2.3)
+
+| GT Neo source button | G29 control | | GT Neo source button | G29 control |
+| --- | --- | --- | --- | --- |
+| 6 | PS | | 18 | dial Enter |
+| 10 | Cross (50 ms hold) | | 12 / 11 | dial up / down |
+| 9 | Circle | | 33 / 34 | plus / minus |
+| 13 / 14 | R1 / L1 (shift paddles) | | 17 / 23 | L2 / R2 |
+| 7 | Triangle | | 38 / 37 | L3 / R3 |
+| 4 | Square | | 29 / 30 / 28 / 25 | D-pad up / right / down / left |
+
+Options (pause) is unassigned: button 18 was offered for both Options and dial Enter and is
+dial Enter by choice. Name a free button to add Options.
+
 GT7 functions are then assigned in GT7: Options → Controller Settings → Steering
 Controller. A guide reports the default G29 layout as nearly complete and suggests moving
 the MFD controls from the dial to L2/R2 ([overtake.gg](https://overtake.gg/news/gran-turismo-7-best-logitech-g29-wheel-settings.1884)).

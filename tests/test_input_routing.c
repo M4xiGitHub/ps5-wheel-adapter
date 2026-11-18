@@ -1,5 +1,6 @@
 // Input mapping (Simagic/VRS -> G29) and downstream device routing decisions.
 #include "devices.h"
+#include "adapter_config.h"
 #include "captured_descriptors.h"
 #include "ffb.h"
 #include "fixtures.h"
@@ -373,8 +374,28 @@ static void test_captured_real_descriptors(void) {
     CHECK(!ffb_set_output_format(&f, CAPTURED_VRS_A3BE, sizeof(CAPTURED_VRS_A3BE)));
 }
 
+// The shipped map must be usable on the real wheel: valid source numbers, no source
+// driving two G29 controls, PS on source 6 and a Cross for PS5 user selection.
+static void test_shipped_button_map(void) {
+    static const button_map_entry_t map[] = { CFG_BUTTON_MAP };
+    const unsigned n = sizeof(map) / sizeof(map[0]);
+    bool ps6 = false, cross = false;
+    for (unsigned i = 0; i < n; i++) {
+        CHECK(map[i].source_button >= 1 && map[i].source_button <= 116);
+        CHECK(map[i].target > G29_BTN_NONE && map[i].target < G29_BTN_COUNT);
+        for (unsigned k = i + 1; k < n; k++) {
+            CHECK(map[i].source_button != map[k].source_button);
+        }
+        ps6 |= map[i].source_button == 6 && map[i].target == G29_BTN_PS;
+        cross |= map[i].target == G29_BTN_CROSS;
+    }
+    CHECK(ps6);
+    CHECK(cross);
+}
+
 int main(void) {
     RUN(test_scale);
+    RUN(test_shipped_button_map);
     RUN(test_captured_real_descriptors);
     RUN(test_min_hold_for_encoder_pulses);
     RUN(test_neutral_without_sources);

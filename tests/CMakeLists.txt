@@ -6,7 +6,7 @@ enable_testing()
 set(FW ${CMAKE_CURRENT_LIST_DIR}/../firmware/src)
 add_compile_options(-Wall -Wextra -Werror -Wno-unused-parameter -fsanitize=address,undefined -fno-omit-frame-pointer)
 add_link_options(-fsanitize=address,undefined)
-include_directories(${FW} ${CMAKE_CURRENT_LIST_DIR})
+include_directories(${FW} ${FW}/../config ${CMAKE_CURRENT_LIST_DIR})
 
 add_library(fwcore STATIC
     ${FW}/auth.c ${FW}/crc32.c ${FW}/devices.c ${FW}/diag.c

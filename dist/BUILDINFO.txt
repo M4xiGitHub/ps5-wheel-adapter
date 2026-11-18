@@ -1,5 +1,5 @@
-version        0.2.2
-built          2026-11-18T17:41:11Z
+version        0.2.3
+built          2026-11-18T17:50:16Z
 host           Darwin arm64
 compiler       arm-none-eabi-gcc (Arm GNU Toolchain 14.2.Rel1 (Build arm-14.52)) 14.2.1 20241119
 cmake          cmake version 3.31.10
@@ -9,6 +9,6 @@ Pico-PIO-USB   fc893627d12892cfd22460856edceac8d5227d7e branch hid-remapper (ups
 picotool       2041936441b48a3cc53ae3da9e805229fe8f4e18 tag 2.3.1 (host tool: UF2 conversion, BOOTSEL log readout)
 
    text	   data	    bss	    dec	    hex	filename
-  91356	      0	  29124	 120480	  1d6a0	ps5_adapter_console.elf
-  88364	      0	  29060	 117424	  1cab0	ps5_adapter_console_noffb.elf
-  96720	      0	  31488	 128208	  1f4d0	ps5_adapter_bench.elf
+  91404	      0	  29124	 120528	  1d6d0	ps5_adapter_console.elf
+  88412	      0	  29060	 117472	  1cae0	ps5_adapter_console_noffb.elf
+  96768	      0	  31488	 128256	  1f500	ps5_adapter_bench.elf

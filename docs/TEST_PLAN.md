@@ -15,7 +15,7 @@ HID input, Hori detection or a delivered signature are intermediate results.
 | T1 Hori signs | | | pending | |
 | T2 Rig descriptors | 2026-11-18 | bench 0.1.0 e1e4edee… | pass (via adapter) | Simagic 185 B and VRS 80 B descriptors captured; both match the brief's layouts; now test fixtures. Hat is 4-way (logical 0..3) -> fixed in 0.2.1 |
 | T3 Enumeration on both ports | 2026-11-18 | bench 0.1.0 e1e4edee… | pass, with note | macOS host. Hori validated (F0/F1/F2/F3); hub + all 4 rig devices mounted; wheel ~1000 reports/s, pedals ~70/s, no rejects/drops. **Rig is on port A (GP0/GP1), Hori on port B** – swapped vs the plan; works because roles come from VID/PID + descriptors |
-| T4 Live input + mapping | | | pending | |
+| T4 Live input + mapping | 2026-11-18 | bench 0.2.1 | map recorded, ranges pending | wizard on the GT Neo (second run); 18 = dial Enter by owner's choice, Options unassigned; in config since 0.2.3. `--axes` steering/pedal direction not run yet |
 | T5 Auth through adapter (PC) | | | pending | |
 | T6 Power checks P1–P4 | | | pending | |
 | T7 PS5 accept + PS/user select + GT7 | | console 0.1.0 2aa676cb… | log evidence, on-screen result to confirm | flash log boot #8: configured by the PS5, PS (source 6) pressed 23x; owner to confirm what the TV showed and GT7 control |
