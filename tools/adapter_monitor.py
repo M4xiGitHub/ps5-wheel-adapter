@@ -193,15 +193,47 @@ def wait_press(link, timeout):
     return None
 
 
-def run_wizard(link):
+DIAG_TYPES = ("BOOT", "PORT_EVENT", "DEV_MOUNT", "DEV_ROLE", "HID_MOUNT", "LAYOUT", "LAYOUT_FIELD", "AUTH_DESC",
+              "FIRST_INPUT", "INPUT_REJECT", "USB_DEV", "ERROR")
+
+
+def explain_no_wheel(link, port, seen):
+    """Prints why the wizard cannot start, from what the adapter itself reported."""
+    print("\nNo wheel input arrived. What the adapter reported:")
+    if link.status is None:
+        print("  nothing: no status lines on %s." % port)
+        print("  -> Is the BENCH firmware flashed (not the console one)? Unplug/replug the Pico and retry.")
+        return
+    print("  " + status_line(link.status))
+    shown = [r for r in seen if r.name in DIAG_TYPES]
+    for r in shown:
+        print("  " + adapter_log.format_record(r))
+    if not shown:
+        print("  (boot records were already read by an earlier run: unplug and replug the Pico, then run")
+        print("   'adapter_monitor.py --seconds 30' and send its output)")
+    flags = link.status["flags"]
+    if not flags & 0x20:
+        print("  -> port B (GP2/GP3) shows no attached device: check the rig cable on port B.")
+    elif not any(r.name == "LAYOUT" and r.a == 4 for r in seen):
+        print("  -> no wheel layout record seen: look for DEV_MOUNT 0483:0522 above.")
+    else:
+        print("  -> check the 'wheel layout' line above: UNUSABLE means the Simagic report descriptor")
+        print("     has no steering axis where the firmware looks for it.")
+    print("Please send this whole output.")
+
+
+def run_wizard(link, port):
     print("Button mapping wizard. For each control press and release the wheel button you want,")
     print("or press Enter to skip. Do not touch other buttons meanwhile.\n")
+    print("Waiting up to 30 s for wheel input: turn the wheel a little or press any wheel button...")
+    seen = []
     t0 = time.time()
-    while not (link.status and link.status["valid"] & 1):
-        link.poll()
-        if time.time() - t0 > 10:
-            print("No wheel input in the status stream. Is the rig connected to port B and the wheel layout valid?")
+    while not (link.status and link.status["flags"] & 0x04):  # HB_WHEEL_VALID: a wheel report arrived
+        seen += link.poll()
+        if time.time() - t0 > 30:
+            explain_no_wheel(link, port, seen)
             return 1
+    print("wheel input OK\n")
     entries = []
     used = {}
     for macro, text in WIZARD_TARGETS:
@@ -273,7 +305,7 @@ def main(argv=None):
         return 0
     try:
         if args.wizard:
-            return run_wizard(link)
+            return run_wizard(link, port)
         if args.axes:
             return run_axes(link, args.seconds or 20)
         run_monitor(link, args.seconds)
